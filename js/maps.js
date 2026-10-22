@@ -4,20 +4,22 @@ function newWorld(mapId,seed,mode){
   if(W)disposeWorld();
   SR=mulberry(seed);buildMaterials(mapId);
   W={id:mapId,mode,half:MAPS[mapId].half,boxes:[],meshes:[],containers:[],doors:[],cameras:[],turrets:[],mines:[],switches:[],ladders:[],extracts:[],flags:[],
-    roofSpots:[],spawnsP:[],enemySpots:[],bossSpot:null,bases:{1:null,2:null},smokes:[],shields:[],lampPos:[],glows:[],power:false,clampExtra:null,bodies:[],nav:null,stripCount:0};
+    roofSpots:[],spawnsP:[],enemySpots:[],bossSpot:null,bases:{1:null,2:null},smokes:[],shields:[],lampPos:[],glows:[],power:false,clampExtra:null,bodies:[],nav:null,stripCount:0,
+    ziplines:[],pads:[],breakables:[],elevators:[],gas:[],ammoSt:[],pickups:[],navBlock:null,relicPos:{x:0,z:0},holdPos:{x:0,z:0},duelSpots:null};
   gridInit(W.half);
   const h=W.half;
   // ground
   const gt=MAT.ground.map;gt.repeat.set(h/3.5,h/3.5);
   const g=new T.Mesh(new T.PlaneGeometry(h*2+260,h*2+260),MAT.ground);g.rotation.x=-Math.PI/2;g.receiveShadow=true;scene.add(g);W.meshes.push(g);
   // mountains ring
-  for(let i=0;i<18;i++){const a=i/18*TAU+srnd(-.1,.1),R=h+srnd(70,120),hh=srnd(40,90);const m=new T.Mesh(new T.ConeGeometry(srnd(45,85),hh,6),MAT.mtn);m.position.set(Math.cos(a)*R,hh/2-3,Math.sin(a)*R);scene.add(m);W.meshes.push(m)}
+  for(let i=0;i<22;i++){const a=i/22*TAU+srnd(-.1,.1),R=h+srnd(70,120),hh=srnd(40,90);const m=new T.Mesh(new T.ConeGeometry(srnd(45,85),hh,6),MAT.mtn);m.position.set(Math.cos(a)*R,hh/2-3,Math.sin(a)*R);scene.add(m);W.meshes.push(m)}
   // perimeter
-  const wm=mapId==='frost'?'rock':'dark';
+  const wm=mapId==='frost'||mapId==='dam'?'rock':'dark';
   for(const s of [-1,1]){sbox(0,s*h,h*2+2,1.4,6,wm,0,{uv:3});sbox(s*h,0,1.4,h*2,6,wm,0,{uv:3})}
   // strips instanced (loot crate lights)
-  W.stripMesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),new T.MeshBasicMaterial({color:0xffffff}),260);for(let i=0;i<260;i++){W.stripMesh.setColorAt(i,new T.Color(0xffffff));_m4.makeScale(0,0,0);W.stripMesh.setMatrixAt(i,_m4)}W.stripMesh.count=0;scene.add(W.stripMesh);W.meshes.push(W.stripMesh);
-  ({town:genTown,harbor:genHarbor,frost:genFrost})[mapId]();
+  W.stripMesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),new T.MeshBasicMaterial({color:0xffffff}),600);for(let i=0;i<600;i++){W.stripMesh.setColorAt(i,new T.Color(0xffffff));_m4.makeScale(0,0,0);W.stripMesh.setMatrixAt(i,_m4)}W.stripMesh.count=0;scene.add(W.stripMesh);W.meshes.push(W.stripMesh);
+  ({town:genTown,harbor:genHarbor,frost:genFrost,dam:genDam,warehouse:genWarehouse})[mapId]();
+  if(W.treeList)buildTrees();
   bucketsToMeshes();
   buildNav();
   W.stripMesh.instanceMatrix.needsUpdate=true;if(W.stripMesh.instanceColor)W.stripMesh.instanceColor.needsUpdate=true;
@@ -51,7 +53,7 @@ function makeDoor(x,z,axis,w,y0=0,locked=null){
   W.boxes.push(b);gridAdd(b);
   const d={x,z,y:y0,axis,w,pivot,box:b,open:false,locked,anim:0,target:0};b.door=d;W.doors.push(d);return d}
 function toggleDoor(d,byBot=false){if(d.locked)return false;d.open=!d.open;d.target=d.open?1:0;d.box.off=d.open;if(!byBot)blip(d.open?300:240,.08,'triangle',.05);return true}
-function stripAt(x,y,z,w,col){if(W.stripCount>=260)return -1;const i=W.stripCount++;_m4.makeScale(w,.05,.02);_m4.setPosition(x,y,z);W.stripMesh.setMatrixAt(i,_m4);_tc.setHex(col);W.stripMesh.setColorAt(i,_tc);W.stripMesh.count=W.stripCount;return i}
+function stripAt(x,y,z,w,col){if(W.stripCount>=600)return -1;const i=W.stripCount++;_m4.makeScale(w,.05,.02);_m4.setPosition(x,y,z);W.stripMesh.setMatrixAt(i,_m4);_tc.setHex(col);W.stripMesh.setColorAt(i,_tc);W.stripMesh.count=W.stripCount;return i}
 const STRIP_COL={crate:0xffb547,weapon:0x9ad06a,med:0x72f5a8,safe:0xff8a3a,vault:0xfff0a0,pc:0x6db5ff,airdrop:0xff4b3e};
 function lootBox(x,z,type='crate',y0=0){
   const S={crate:[1.05,.62,.66,'loot',1.3],weapon:[1.4,.5,.6,'cG',1.6],med:[.8,.5,.5,'wallA',1],safe:[.8,1,.7,'metal',3],vault:[1.3,.78,.82,'gold',2.6],pc:[.6,.5,.5,'dark',1.4],airdrop:[1.6,1.2,1.6,'cR',3]}[type];
@@ -130,7 +132,7 @@ function building(cx,cz,w,d,o={}){
   sbox(cx,cz,w+.8,d+.8,.32,'roof',h);
   sbox(cx,cz,w-.1,d-.1,.04,'floor',0,{solid:false,shoot:false,uv:2});
   // doors
-  for(const p of doorPts){const lk=o.locked&&p===doorPts[0]?o.locked:null;if(lk||SR()<.6)makeDoor(p.x,p.z,p.axis,2.1,0,lk)}
+  for(const p of doorPts){const lk=o.locked&&p===doorPts[0]?o.locked:null;if(lk)makeDoor(p.x,p.z,p.axis,2.1,0,lk);else{const r=SR();if(r<.5)makeDoor(p.x,p.z,p.axis,2.1,0,null);else if(r<.62)boards(p.x,p.z,p.axis,2.2,2.5)}}
   // second floor
   let stairZone=null;
   if(floors===2){const sw=1.4,len=10*.42;const sx=cx-w/2+.4+sw/2,sz0=cz-d/2+.6;stairs(sx,sz0,'z+',sw,fh,m);
@@ -180,117 +182,12 @@ function scatter(n,minEdge=8){for(let i=0;i<n;i++){const x=srnd(-W.half+minEdge,
   if(W.spawnsP.some(c=>Math.hypot(c.x-x,c.z-z)<14)||W.extracts.some(e=>Math.hypot(e.pos.x-x,e.pos.z-z)<9))continue;
   const r=SR();if(r<.35){if(isFree(x,z,1.6))woodCrate(x,z)}else if(r<.6){const len=srnd(3,5);if(isFree(x,z,len/2+.6))sandbag(x,z,len,SR()<.5)}else if(r<.75)barrel(x,z,SR()<.5);else if(r<.85){if(isFree(x,z,4))container(x,z,SR()<.5)}else if(r<.92)lootBox(x,z,'crate')}}
 
-/* ---------- MAP: 灰區鎮 ---------- */
-function genTown(){const h=W.half,CS=30;
-  for(const c of [-75,-45,-15,15,45,75]){road(c,0,7,h*2-4);road(0,c,h*2-4,7)}
-  W.spawnsP=[{x:-108,z:-108},{x:108,z:-108},{x:108,z:108},{x:-108,z:108}];
-  // command post
-  building(0,0,20,15,{floors:2,doors:['n','s','e','w'],loot:2,vault:false,lootTypes:['crate','safe','weapon','pc'],mat:'dark'});
-  for(const [x,z] of [[0,-12],[0,12],[-14,0],[14,0]])sandbag(x,z,6,x!==0);
-  turret(-8,-12.5);turret(8,12.5);camDevice(-10.2,3.2,-7.7,Math.PI*1.25);camDevice(10.2,3.2,7.7,Math.PI*.25);
-  powerSwitch(-9.6,1.3,6.9,'z-');W.bossSpot={x:2,z:2};
-  const specials=SR()<.5?[[-2,1],[2,-1]]:[[1,2],[-1,-2]];let bank=specials[0],clinic=specials[1];
-  for(let gx=-3;gx<=3;gx++)for(let gz=-3;gz<=3;gz++){if(Math.abs(gx)<=0&&Math.abs(gz)<=0)continue;if(Math.abs(gx)===3&&Math.abs(gz)===3)continue;
-    const cx=gx*CS+srnd(-2,2),cz=gz*CS+srnd(-2,2);
-    if(gx===bank[0]&&gz===bank[1]){building(cx,cz,16,12,{floors:1,h:5,locked:'R',vault:true,loot:2,lootTypes:['safe','vault'],mat:'wallB',mine:true});continue}
-    if(gx===clinic[0]&&gz===clinic[1]){building(cx,cz,14,11,{floors:2,loot:2,lootTypes:['med','med','crate','pc'],mat:'wallC'});continue}
-    const r=SR();
-    if(r<.55)building(cx,cz,srnd(10,17),srnd(9,14),{floors:SR()<.35?2:1,ladder:SR()<.4,mine:SR()<.12});
-    else if(r<.75)yard(cx,cz);else field(cx,cz)}
-  for(const [x,z] of [[-100,0],[100,0],[0,-100],[0,100]])tower(x+srnd(-4,4),z+srnd(-4,4));
-  for(const c of [-45,-15,15,45])for(const c2 of [-45,-15,15,45])lamp(c+3.6,c2+3.6);
-  extractPoint('std',-112,40,'西側林道');extractPoint('std',40,112,'南邊隧道');extractPoint('std',112,-40,'東側檢查哨');
-  extractPoint('paid',-40,-112,'地下走私通道');extractPoint('power',112,60,'電動閘門');extractPoint('heli',-60,60,'直升機坪');extractPoint('nobag',60,-75,'排水管');
-  scatter(150);
-  // gate for power extract
-  W.powerGate=dbox(118,60,1,10,5,'metal',0);
-  W.flagsPos=[[0,-22,'A'],[-60,-60,'B'],[60,60,'C'],[60,-60,'D'],[-60,60,'E']];W.basePos={1:{x:-108,z:0},2:{x:108,z:0}}}
-
-/* ---------- MAP: 鐵鏽港 ---------- */
-function genHarbor(){const h=W.half;
-  // water east
-  const water=new T.Mesh(new T.PlaneGeometry(400,600),new T.MeshStandardMaterial({color:THEME.water,roughness:.2,metalness:.5,transparent:true,opacity:.92}));water.rotation.x=-Math.PI/2;water.position.set(112+200,.05,0);scene.add(water);W.meshes.push(water);
-  sbox(111,0,2,h*2,1.2,'dark',-1.2);
-  W.clampExtra=p=>{if(p.x>110){const onShip=p.z>-46&&p.z<46&&p.x<132;if(!onShip)p.x=110}};
-  // quay
-  road(100,0,18,h*2-6);road(0,-70,h*2-40,8);road(0,70,h*2-40,8);road(-20,0,8,h*2-20);
-  // cranes
-  for(let z=-110;z<=110;z+=55){const x=101;for(const [dx,dz] of [[-6,-4],[6,-4],[-6,4],[6,4]])sbox(x+dx,z+dz,.8,.8,22,'yellow',0,{uv:2});
-    sbox(x,z,14,9,1.4,'yellow',22);sbox(x+8,z,30,2,1.6,'yellow',23.4,{solid:false});W.roofSpots.push({x,z,y:23.4,roof:true,crane:true});ladder(x-7.05,z-2,'x-',23.4)}
-  // ship
-  const sx=121,sz=0;sbox(sx,sz,18,90,6,'hull',0);sbox(sx,sz,18.4,.4,1.2,'metal',6);
-  for(const s of [-1,1]){sbox(sx,sz+s*45.2,18.4,.4,1.2,'metal',6);}sbox(sx+9.2,sz,.4,90,1.2,'metal',6);sbox(sx-9.2,sz+12,.4,66,1.2,'metal',6);
-  // gangway (stairs from quay to deck)
-  stairs(104,-40,'x+',2.4,6,'metal');
-  // ship bridge
-  building(sx+2,sz+34,12,10,{h:4,floors:1,doors:['n'],loot:2,lootTypes:['safe','crate','pc'],mat:'wallA'});
-  for(let i=0;i<5;i++){const z=sz-30+i*12;container(sx-3,z,false,6,null);if(SR()<.5)container(sx+3,z,false,6)}
-  lootBox(sx,sz-6,'weapon',6);lootBox(sx+5,sz+8,'crate',6);
-  W.roofSpots.push({x:sx,z:sz+25,y:6,roof:true});
-  // container yard
-  for(let x=-50;x<=80;x+=13){for(let z=-120;z<=120;z+=9){if(Math.abs(z)<74&&Math.abs(z)>66)continue;if(Math.abs(x+20)<6)continue;if(SR()<.32)continue;
-    const st=1+(SR()*3|0);for(let k=0;k<st;k++)container(x,z,false,k*2.6);if(st>=2&&SR()<.3&&isFree(x-2.3,z+3,.7))stairs(x-2.3,z+1.22+8*.42,'z-',1.2,2.6,'metal');}}
-  for(let i=0;i<14;i++){const x=srnd(-50,80),z=srnd(-115,115);if(isFree(x,z,1))lootBox(x,z,spick(['crate','crate','weapon']))}
-  for(let i=0;i<10;i++)W.enemySpots.push({x:srnd(-45,80),z:srnd(-110,110)});
-  // warehouses
-  for(const z of [-90,-30,30,90]){const cx=-100,cz=z;building(cx,cz,30,20,{h:8,floors:1,doors:['e','w','n'],loot:4,lootTypes:['crate','crate','weapon','safe','pc'],mat:'wallB',ladder:true});
-    for(let i=0;i<3;i++){const sx2=cx-9+i*9;sbox(sx2,cz,1.2,10,3.2,'metal',0,{uv:1});}}
-  // office with server room
-  building(-55,-118+14,22,14,{floors:2,locked:'B',vault:true,loot:3,lootTypes:['pc','pc','safe','vault'],mat:'wallC',mine:true});
-  camDevice(-66.2,3,-111,-Math.PI*.6);turret(-44,-100);
-  // fuel tanks
-  for(const [x,z] of [[-115,120],[-100,120],[-85,120]]){const m=new T.Mesh(new T.CylinderGeometry(5,5,10,20),MAT.wallC);m.position.set(x,5,z);m.castShadow=m.receiveShadow=true;scene.add(m);W.meshes.push(m);
-    const b={minX:x-4.4,maxX:x+4.4,minZ:z-4.4,maxZ:z+4.4,minY:0,maxY:10,solid:true,shoot:true};W.boxes.push(b);gridAdd(b)}
-  for(let i=0;i<6;i++)barrel(srnd(-120,-80),srnd(100,112),true);
-  powerSwitch(-86,1.3,-80,'x+');
-  W.spawnsP=[{x:-135,z:-135},{x:-135,z:135},{x:40,z:-138},{x:40,z:138}];
-  for(const x of [-60,-20,20,60,95])for(const z of [-70,70])lamp(x+4.5,z+4.5);
-  extractPoint('std',-140,0,'西門');extractPoint('std',70,-140,'南側卸貨區');extractPoint('nobag',128,40,'救生艇');
-  extractPoint('paid',-20,140,'走私貨車');extractPoint('power',70,140,'北側電閘');extractPoint('heli',-10,-25,'港務直升機坪');
-  W.powerGate=dbox(70,146,10,1,5,'metal',0);
-  scatter(110);W.bossSpot={x:sx,z:sz-12,y:6};
-  W.flagsPos=[[121,0,'A'],[-100,-30,'B'],[15,0,'C'],[-55,-90,'D'],[30,100,'E']];W.basePos={1:{x:-138,z:120},2:{x:60,z:-130}}}
-
-/* ---------- MAP: 寒脊研究站 ---------- */
-function genFrost(){const h=W.half;
-  // ridges
-  for(const z of [-70,70]){for(let x=-h+10;x<h-10;x+=9){if(Math.abs(x-(z>0?-30:40))<14||Math.abs(x-(z>0?80:-90))<10)continue;rock(x,z+srnd(-3,3),srnd(8,11),srnd(5,9),srnd(4,9))}}
-  for(let i=0;i<40;i++)rock(srnd(-h+10,h-10),srnd(-h+10,h-10),srnd(3,8),srnd(3,8),srnd(1.5,5));
-  // research compound
-  road(0,0,60,6);road(0,0,6,60);
-  building(-14,-14,18,13,{floors:2,doors:['s','e'],loot:3,lootTypes:['pc','pc','safe','crate'],mat:'wallB'});
-  building(14,-14,16,12,{floors:1,h:5,doors:['s','w'],locked:'R',vault:true,loot:2,lootTypes:['vault','safe'],mat:'wallA',mine:true});
-  building(-14,14,16,12,{floors:1,h:4.5,doors:['n','e'],loot:2,lootTypes:['med','med','crate'],mat:'wallC'});
-  building(14,14,18,13,{floors:2,doors:['n','w'],loot:2,lootTypes:['pc','weapon','crate'],mat:'wallB',ladder:true});
-  for(const [x,z] of [[0,-24],[0,24],[-25,0],[25,0]])sandbag(x,z,6,x!==0);
-  turret(-4,-4);turret(4,4);camDevice(-22.9,3,-8,Math.PI*1.5);camDevice(22.9,3,8,Math.PI*.5);W.bossSpot={x:-14,z:-10};
-  powerSwitch(-6.1,1.3,14,'x+');
-  // radar dome
-  {const x=45,z=-35;sbox(x,z,8,8,4,'wallA',0);const dm=new T.Mesh(new T.SphereGeometry(5,20,14,0,TAU,0,Math.PI/2),MAT.wallC);dm.position.set(x,4,z);dm.castShadow=true;scene.add(dm);W.meshes.push(dm);sbox(x,z,7,7,4,null,4);lootBox(x+5,z,'pc');W.enemySpots.push({x:x+6,z})}
-  // comm tower
-  {const x=-60,z=40;for(const [dx,dz] of [[-1.5,-1.5],[1.5,-1.5],[-1.5,1.5],[1.5,1.5]])sbox(x+dx,z+dz,.3,.3,14,'metal',0,{uv:1});sbox(x,z,4,4,.3,'metal',14);ladder(x-1.8,z,'x-',14.3);W.roofSpots.push({x,z,y:14.3,roof:true,tower:true})}
-  // bunkers
-  for(const [x,z] of [[80,-100],[-90,-100],[95,100],[-100,95]]){sbox(x,z,10,8,2.6,'dark',0);for(const s of [-1,1])sbox(x,z+s*4.2,10,.4,2.2,'dark',0);sbox(x+5.2,z,.4,8.8,2.2,'dark',0);
-    lootBox(x-2,z,'weapon');lootBox(x+2,z+2,'crate');W.enemySpots.push({x,z})}
-  // cabins
-  for(let i=0;i<8;i++){const x=srnd(-120,-50),z=srnd(-50,50);if(isFree(x,z,8))building(x,z,srnd(8,11),srnd(7,9),{h:3.6,mat:'wood',loot:1,lootTypes:['crate','med','pc']})}
-  for(let i=0;i<6;i++){const x=srnd(50,120),z=srnd(-55,55);if(isFree(x,z,8))building(x,z,srnd(9,14),srnd(8,11),{h:4,floors:SR()<.3?2:1,loot:1})}
-  for(let i=0;i<6;i++){const x=srnd(-110,110),z=srnd(85,125);if(isFree(x,z,8))building(x,z,srnd(9,13),srnd(8,10),{h:4,loot:1})}
-  for(let i=0;i<6;i++){const x=srnd(-110,110),z=srnd(-125,-85);if(isFree(x,z,8))building(x,z,srnd(9,13),srnd(8,10),{h:4,loot:1,ladder:SR()<.4})}
-  for(const [x,z] of [[-100,0],[100,-5]])tower(x,z);
-  W.spawnsP=[{x:-125,z:-125},{x:125,z:-125},{x:125,z:125},{x:-125,z:125}];
-  for(const c of [-20,20])for(const c2 of [-20,20])lamp(c+3.5,c2+3.5);
-  extractPoint('std',-130,-10,'西側纜車站');extractPoint('std',130,10,'東側雪道');extractPoint('nobag',-30,130,'冰縫小徑');
-  extractPoint('paid',40,-130,'補給車隊');extractPoint('power',0,-130,'南側隧道');extractPoint('heli',60,60,'研究站直升機坪');
-  W.powerGate=dbox(0,-136,10,1,5,'metal',0);
-  scatter(80);
-  W.flagsPos=[[0,0,'A'],[-60,40,'B'],[45,-35,'C'],[-90,-100,'D'],[95,100,'E']];W.basePos={1:{x:-125,z:0},2:{x:125,z:0}}}
-
 /* ================= nav grid + A* ================= */
 function buildNav(){const res=2,n=Math.ceil(W.half*2/res),g=new Uint8Array(n*n);const o=-W.half;
   for(const b of W.boxes){if(!b.solid||b.off||b.kind==='door'&&!b.door.locked)continue;if(b.minY>1.6||b.maxY<.5)continue;
     const x0=Math.max(0,Math.floor((b.minX-.45-o)/res)),x1=Math.min(n-1,Math.floor((b.maxX+.45-o)/res)),z0=Math.max(0,Math.floor((b.minZ-.45-o)/res)),z1=Math.min(n-1,Math.floor((b.maxZ+.45-o)/res));
     for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){const cx=o+(x+.5)*res,cz=o+(z+.5)*res;if(cx>b.minX-.9&&cx<b.maxX+.9&&cz>b.minZ-.9&&cz<b.maxZ+.9)g[z*n+x]=1}}
+  if(W.navBlock)for(let z=0;z<n;z++)for(let x=0;x<n;x++)if(W.navBlock(o+(x+.5)*res,o+(z+.5)*res))g[z*n+x]=1;
   W.nav={res,n,g,o}}
 function navCell(x,z){const N=W.nav;return[clamp(Math.floor((x-N.o)/N.res),0,N.n-1),clamp(Math.floor((z-N.o)/N.res),0,N.n-1)]}
 function navFree(cx,cz){const N=W.nav;return cx>=0&&cz>=0&&cx<N.n&&cz<N.n&&!N.g[cz*N.n+cx]}
@@ -317,7 +214,7 @@ function navLine(a,b){const N=W.nav;const d=Math.hypot(b.x-a.x,b.z-a.z),st=Math.
 /* ================= time of day ================= */
 let stars=null;
 function applyTOD(tod){const th=THEME;const sky=th.sky[tod]||th.sky.day;
-  const P={day:{fn:35,ff:230,hs:th.snowy?0xe6eef8:0xe6d6b8,hg:th.snowy?0x8a96a6:0x4a3d2e,hi:.8,sc:th.snowy?0xfff4e8:0xffd6a3,si:1.75,dir:[70,95,40],ex:th.snowy?.95:1.05,lamp:0},
+  const P={day:{fn:40,ff:280,hs:th.snowy?0xe6eef8:0xe6d6b8,hg:th.snowy?0x8a96a6:0x4a3d2e,hi:.8,sc:th.snowy?0xfff4e8:0xffd6a3,si:1.75,dir:[70,95,40],ex:th.snowy?.95:1.05,lamp:0},
     dusk:{fn:25,ff:170,hs:0xf0b080,hg:0x3a2a2a,hi:.55,sc:0xff8a4a,si:1.45,dir:[110,26,-30],ex:1,lamp:.5},
     night:{fn:8,ff:85,hs:0x4a5a88,hg:0x0a0a10,hi:.34,sc:0x8aa4ff,si:.3,dir:[-50,90,60],ex:1.15,lamp:1}}[tod]||null;
   const p=P||{};scene.background.setHex(sky);scene.fog.color.setHex(sky);scene.fog.near=p.fn;scene.fog.far=p.ff;

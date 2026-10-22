@@ -6,17 +6,19 @@ function banner(t,sub='',d=2.4){$('banner').innerHTML='';const s=document.create
 function note(t){$('note').textContent=t;$('note').style.opacity=1;noteT=2.5}
 function feedMsg(html){const d=document.createElement('div');d.innerHTML=html;const f=$('feed');f.prepend(d);while(f.children.length>5)f.lastChild.remove();setTimeout(()=>d.remove(),4500)}
 function lootToast(lines){const box=$('loot');for(const [t,c,v] of lines){const d=document.createElement('div');const b=document.createElement('b');b.style.color=c;b.textContent=t;d.appendChild(b);if(v){const s=document.createElement('span');s.textContent=v;d.appendChild(s)}box.appendChild(d);setTimeout(()=>d.remove(),3800)}while(box.children.length>9)box.firstChild.remove()}
-function hitmark(kind){hitT=kind==='kill'?.45:.18;hitKind=kind;if(kind==='head'){blip(1900,.05,'triangle',.06);blip(2600,.05,'triangle',.04,0,.03)}else if(kind==='kill'){blip(1200,.07,'square',.05);blip(1700,.09,'square',.045,0,.06)}else blip(1500,.03,'triangle',.04)}
+function hitmark(kind){hitT=kind==='kill'?.45:.18;hitKind=kind;if(!PF.settings.hitSnd)return;if(kind==='head'){blip(1900,.05,'triangle',.06);blip(2600,.05,'triangle',.04,0,.03)}else if(kind==='kill'){blip(1200,.07,'square',.05);blip(1700,.09,'square',.045,0,.06)}else blip(1500,.03,'triangle',.04)}
 const dirs=[];function dmgDir(src){const el=document.createElement('div');el.className='arc';$('dirs').appendChild(el);dirs.push({el,x:src.x,z:src.z,t:1.3});if(dirs.length>6){const o=dirs.shift();o.el.remove()}}
 const heading=()=>{let h=(-P.yaw*180/Math.PI)%360;return h<0?h+360:h};
 function bearingTo(x,z){let b=Math.atan2(x-P.pos.x,-(z-P.pos.z))*180/Math.PI;return b<0?b+360:b}
 
 UI.enterGame=()=>{$('hub').hidden=true;$('result').hidden=true;$('pause').hidden=true;$('respawn').hidden=true;$('inv').hidden=true;$('bigmap').hidden=true;UI.invOpen=UI.mapOpen=UI.respawnOpen=false;
-  $('hud').hidden=false;$('touch').hidden=!isTouch;$('cqBar').hidden=M.mode!=='conquest';$('timerLbl').textContent=M.mode==='conquest'?'剩餘時間':'撤離倒數';$('carryLbl').textContent=M.mode==='conquest'?'分數':'攜帶價值';
+  $('hud').hidden=false;$('touch').hidden=!isTouch;$('cqBar').hidden=M.mode==='extract';
+  const lbl={conquest:['我方兵力','敵方兵力'],tdm:['我方擊殺','敵方擊殺'],relic:['我方得分','敵方得分'],duel:['你','對手'],zombie:['剩餘喪屍','下一波'],oitc:['你的擊殺','最高'],gungame:['你的擊殺','最高']}[M.mode]||['',''];$('tk1').title=lbl[0];$('tk2').title=lbl[1];$('cqL1').textContent=lbl[0];$('cqL2').textContent=lbl[1];$('timerLbl').textContent=M.mode==='extract'?'撤離倒數':M.mode==='zombie'?'波數':M.mode==='duel'?'回合':'剩餘時間';$('carryLbl').textContent=M.mode==='extract'?'攜帶價值':'分數';
   $('feed').innerHTML='';$('loot').innerHTML='';dirs.forEach(d=>d.el.remove());dirs.length=0;
   buildSlotButtons();buildSkillTiles();$('flagChips').innerHTML=W.flags.map((f,i)=>`<span class="flag" id="fc${i}">${f.label}</span>`).join('');
-  for(const k in UI._c)delete UI._c[k];if(isTouch)try{document.documentElement.requestFullscreen&&!document.fullscreenElement&&document.documentElement.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}).catch(()=>{})}catch(e){}}
-UI.leaveGame=()=>{$('hud').hidden=true;$('touch').hidden=true;$('inv').hidden=true;$('bigmap').hidden=true;$('respawn').hidden=true;$('pause').hidden=true;$('vig').style.opacity=0;UI.invOpen=UI.mapOpen=UI.respawnOpen=false}
+  for(const k in UI._c)delete UI._c[k];document.body.classList.add('ingame');$('chat').hidden=!M.net;$('chatLines').innerHTML='';$('clickPlay').hidden=true;$('countdown').hidden=true;
+  $('tInv').textContent=M.mode==='extract'?'背包':'計分';if(isTouch)try{document.documentElement.requestFullscreen&&!document.fullscreenElement&&document.documentElement.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}).catch(()=>{})}catch(e){}}
+UI.leaveGame=()=>{document.body.classList.remove('ingame');$('clickPlay').hidden=true;$('score').hidden=true;UI.killcamOn=false;$('killcam').hidden=true;$('countdown').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('inv').hidden=true;$('bigmap').hidden=true;$('respawn').hidden=true;$('pause').hidden=true;$('vig').style.opacity=0;UI.invOpen=UI.mapOpen=UI.respawnOpen=false}
 UI.toHub=()=>{$('result').hidden=true;$('hub').hidden=false;Hub.render()}
 UI.scope=b=>{const h=$('scope');if(h.hidden===!b)return;h.hidden=!b};
 UI.prompt=(label,prog,tap,t)=>{if(isTouch){const b=$('tUse');b.hidden=!label;if(label){const txt=(prog>0?Math.round(prog*100)+'% · ':'')+label;if(b.textContent!==txt)b.textContent=txt}return}
@@ -28,21 +30,24 @@ $('resumeBtn').onclick=()=>{initAudio();resumeGame();lockPointer()};
 $('abandonBtn').onclick=()=>{$('pause').hidden=true;M.paused=false;if(M.mode==='conquest'){M.ending=true;stopMatch();if(M.net&&M.isHost)netEndForAll();UI.toHub()}else{if(M.net&&M.isHost&&Object.keys(netPuppets).length)netEndForAll();endRaid('abandon');if(M.running){stopMatch();UI.toHub()}}};
 // respawn (conquest)
 let respChoice=null;
-UI.respawnOpen5=()=>{UI.respawnOpen=true;respChoice=null;const el=$('respawn');el.hidden=false;const b=$('respBtns');b.innerHTML='';
-  const add=(label,pt)=>{const btn=document.createElement('button');btn.className='ghost';btn.type='button';btn.textContent=label;btn.onclick=()=>{respChoice=pt;[...b.children].forEach(c=>c.style.borderColor='');btn.style.borderColor='var(--amber)';if(P.respawnT<=0)respawnPlayer(pt)};b.appendChild(btn)};
-  add('基地',{x:W.basePos[1].x,z:W.basePos[1].z});for(const f of W.flags)if(f.owner===1)add('據點 '+f.label,{x:f.x+rnd(-5,5),z:f.z+rnd(-5,5)})};
-UI.respawnTick=t=>{$('respTxt').textContent=t>0?`${Math.ceil(t)} 秒後可以重生 · 選擇重生地點`:'點選重生地點';if(t<=0&&respChoice)respawnPlayer(respChoice);else if(t<=-4)respawnPlayer(null)};
+UI.respawnOpen5=()=>{UI.respawnOpen=true;respChoice=null;const el=$('respawn');el.hidden=false;const b=$('respBtns');b.innerHTML='';const pb=$('respPresets');pb.innerHTML='';
+  const ffa=MODES[M.mode].ffa;
+  if(!ffa){PF.presets.forEach((pr,i)=>{const btn=document.createElement('button');btn.type='button';btn.className='card';btn.setAttribute('aria-pressed',String(PF.preset===i));
+    btn.innerHTML=`<b>${pr.name}</b><small>${[pr.p1,pr.p2,pr.pistol].filter(Boolean).map(w=>WEAPONS[w].name).join(' · ')}</small>`;btn.onclick=()=>{PF.preset=i;savePF();[...pb.children].forEach(c=>c.setAttribute('aria-pressed','false'));btn.setAttribute('aria-pressed','true')};pb.appendChild(btn)})}
+  const add=(label,pt)=>{const btn=document.createElement('button');btn.className='ghost';btn.type='button';btn.textContent=label;btn.onclick=()=>{respChoice=pt||'auto';[...b.children].forEach(c=>c.style.borderColor='');btn.style.borderColor='var(--amber)';if(P.respawnT<=0)respawnPlayer(pt)};b.appendChild(btn)};
+  if(M.mode==='conquest'){add('基地',W.basePos[P.team]);for(const f of W.flags)if(f.owner===P.team)add('據點 '+f.label,{x:f.x+rnd(-5,5),z:f.z+rnd(-5,5)})}else add('立即重生',null)};
+UI.respawnTick=t=>{$('respTxt').textContent=t>0?`${Math.ceil(t)} 秒後重生`+(MODES[M.mode].ffa?'':' · 可切換配裝（F1–F3）'):'點選重生';if(t<=0&&respChoice)respawnPlayer(respChoice==='auto'?null:respChoice);else if(t<=-3)respawnPlayer(null)};
 UI.respawnClose=()=>{UI.respawnOpen=false;$('respawn').hidden=true};
 // results
 UI.showResult=(r,spectate)=>{const el=$('result');el.hidden=false;$('hud').hidden=true;$('touch').hidden=true;$('resItems').innerHTML='';$('resLost').textContent='';
   const st=$('resStats');st.innerHTML='';const stat=(k,v,c)=>{const d=document.createElement('div');d.innerHTML=`<span class="k">${k}</span><strong${c?` style="color:${c}"`:''}>${v}</strong>`;st.appendChild(d)};
-  if(r.mode==='conquest'){$('resTitle').textContent=r.kind==='win'?'勝利':'戰敗';$('resTitle').className=r.kind==='win'?'win':'lose';$('resTag').textContent='全面戰場 · '+MAPS[M.map].name;
-    $('resSub').textContent=`兵力 ${Math.max(0,r.tickets[1])} : ${Math.max(0,r.tickets[2])}`;stat('擊殺',r.kills);stat('陣亡',r.deaths);stat('佔領',r.caps);stat('獎勵',fmt(r.reward),'var(--amber)')}
+  if(r.mode!=='extract'){$('resTitle').textContent=r.kind==='win'?'勝利':r.kind==='draw'?'平手':'戰敗';$('resTitle').className=r.kind==='win'?'win':'lose';$('resTag').textContent=MODES[r.mode].name+' · '+MAPS[M.map].name+' · '+clock(r.time);
+    $('resSub').textContent=r.line||'';stat('擊殺',r.kills);stat('陣亡',r.deaths||0);if(r.assists)stat('助攻',r.assists);if(r.caps)stat('佔領 / 得分',r.caps);if(r.heads)stat('爆頭',r.heads);stat('獎勵',fmt(r.reward),'var(--amber)')}
   else{const T2={win:['撤離成功','win'],dead:['陣亡','lose'],mia:['未能撤離','lose'],abandon:['放棄任務','lose']}[r.kind];$('resTitle').textContent=T2[0];$('resTitle').className=T2[1];
     $('resTag').textContent=`${MAPS[r.map].name} · 行動時間 ${clock(r.time)}`;
     $('resSub').textContent=r.kind==='win'?'所有攜帶的物品已存入倉庫，到商店可以出售。':'只有保險箱裡的物品被帶回。'+(spectate?' 你是房主，請留在這個畫面讓隊友繼續遊戲。':'');
     stat('擊殺',r.kills);stat('爆頭',r.heads);stat('搜索',r.searched);stat('帶回價值',fmt(r.value),'var(--amber)');
-    const cnt={};for(const id of r.items)cnt[id]=(cnt[id]||0)+1;for(const id in cnt){const c=document.createElement('span');c.className='chip';c.style.color=RARITY[ITEMS[id].r];c.textContent=ITEMS[id].name+(cnt[id]>1?' ×'+cnt[id]:'');$('resItems').appendChild(c)}
+    const cnt={};for(const id of r.items)cnt[id]=(cnt[id]||0)+1;for(const id in cnt){const c=document.createElement('span');c.className='chip';if(id.startsWith('__w_')){c.style.color='var(--amber)';c.textContent='槍枝：'+WEAPONS[id.slice(4)].name}else{c.style.color=RARITY[ITEMS[id].r];c.textContent=ITEMS[id].name+(cnt[id]>1?' ×'+cnt[id]:'')}$('resItems').appendChild(c)}
     if(r.lost&&r.lost.length)$('resLost').textContent='遺失：'+r.lost.slice(0,14).join('、')+(r.lost.length>14?'…':'')}
   $('resHub').textContent=spectate?'結束並返回倉庫':'返回倉庫'};
 $('resHub').onclick=()=>{if(M.running){if(M.net&&M.isHost)netEndForAll();stopMatch()}UI.toHub()};
@@ -105,13 +110,16 @@ function drawCompass(){const w=1120,hd=heading(),ppd=w/130;cc.clearRect(0,0,w,88
     if(big){cc.font='700 22px "Noto Sans TC",sans-serif';cc.fillStyle=n===0?'#ffb547':'#efe7d6';cc.fillText(LBL[n],x,34)}else if(mid){cc.font='500 16px "JetBrains Mono",monospace';cc.fillStyle='rgba(239,231,214,.6)';cc.fillText(n,x,34)}}
   if(M.mode==='extract'){for(const e of W.extracts){if(!extractOK(e))continue;marker(hd,bearingTo(e.pos.x,e.pos.z),EXCOL[e.type],Math.round(Math.hypot(e.pos.x-P.pos.x,e.pos.z-P.pos.z))+'m',ppd,w)}
     if(airdrop&&!airdrop.looted)marker(hd,bearingTo(airdrop.x,airdrop.z),'#ff4b3e','空投',ppd,w)}
-  else for(const f of W.flags)marker(hd,bearingTo(f.x,f.z),f.owner===1?'#4a8cff':f.owner===2?'#ff4b3e':'#cccccc',f.label,ppd,w);
+  else for(const f of W.flags)marker(hd,bearingTo(f.x,f.z),f.owner===P.team?'#4a8cff':f.owner?'#ff4b3e':'#cccccc',f.label,ppd,w);
+  if(M.relic)marker(hd,bearingTo(M.relic.pos.x,M.relic.pos.z),'#ffd34a','聖物',ppd,w);if(M.mode==='relic'){const b=W.basePos[P.team];marker(hd,bearingTo(b.x,b.z),'#4a8cff','基地',ppd,w)}
+  if(M.mode==='zombie')marker(hd,bearingTo(W.holdPos.x,W.holdPos.z),'#72f5a8','據點',ppd,w);
   for(const k in netPuppets){const p=netPuppets[k];if(p.alive)marker(hd,bearingTo(p.pos.x,p.pos.z),'#72c8f5','',ppd,w)}
   cc.fillStyle='#ffb547';cc.beginPath();cc.moveTo(w/2,52);cc.lineTo(w/2-7,44);cc.lineTo(w/2+7,44);cc.closePath();cc.fill()}
 function drawMini(){const s=300,c=s/2,K=2.2;mc.clearRect(0,0,s,s);mc.save();mc.beginPath();mc.arc(c,c,c-2,0,TAU);mc.clip();mc.translate(c,c);mc.rotate(-heading()*Math.PI/180);
   mc.save();mc.scale(K/MS,K/MS);mc.drawImage(mapBase,-(P.pos.x+W.half)*MS,-(P.pos.z+W.half)*MS);mc.restore();
   if(M.mode==='extract')for(const e of W.extracts){mc.fillStyle=EXCOL[e.type];mc.globalAlpha=extractOK(e)?.5:.15;mc.beginPath();mc.arc((e.pos.x-P.pos.x)*K,(e.pos.z-P.pos.z)*K,e.r*K,0,TAU);mc.fill();mc.globalAlpha=1}
   else for(const f of W.flags){mc.fillStyle=f.owner===1?'rgba(74,140,255,.5)':f.owner===2?'rgba(255,75,62,.5)':'rgba(200,200,200,.4)';mc.beginPath();mc.arc((f.x-P.pos.x)*K,(f.z-P.pos.z)*K,f.r*K,0,TAU);mc.fill()}
+  if(M.relic){mc.fillStyle='#ffd34a';mc.beginPath();mc.arc((M.relic.pos.x-P.pos.x)*K,(M.relic.pos.z-P.pos.z)*K,7,0,TAU);mc.fill()}
   for(const b of bots){if(b.dead)continue;const ally=b.team===P.team;if(!ally&&b.spotT<=0&&b.markT<=0&&b.pos.distanceTo(P.pos)>12)continue;mc.fillStyle=ally?'#72c8f5':'#ff4b3e';mc.beginPath();mc.arc((b.pos.x-P.pos.x)*K,(b.pos.z-P.pos.z)*K,b.kind==='boss'?8:5,0,TAU);mc.fill()}
   for(const k in netPuppets){const p=netPuppets[k];if(!p.alive)continue;mc.fillStyle='#72c8f5';mc.beginPath();mc.arc((p.pos.x-P.pos.x)*K,(p.pos.z-P.pos.z)*K,6,0,TAU);mc.fill()}
   mc.restore();mc.fillStyle='#ffb547';mc.beginPath();mc.moveTo(c,c-11);mc.lineTo(c-8,c+8);mc.lineTo(c,c+4);mc.lineTo(c+8,c+8);mc.closePath();mc.fill();
@@ -123,8 +131,15 @@ function buildSkillTiles(){const o=OPERATORS[P.op];$('skills').innerHTML=['s1','
 function hud(dt){
   const s=curW();
   if(M.mode==='extract'){setT('timer',clock(M.left));$('timer').className=M.left<180?'warn':'';setT('carry',fmt(invValue()))}
-  else{setT('timer',clock(M.cqLeft||0));setT('carry',String(M.stats.score));setT('tk1',String(Math.max(0,M.tickets[1])));setT('tk2',String(Math.max(0,M.tickets[2])));
-    W.flags.forEach((f,i)=>{const e=$('fc'+i);if(!e)return;const col=f.owner===1?'#4a8cff':f.owner===2?'#ff4b3e':'#888';if(e._c!==col+f.inMe){e._c=col+f.inMe;e.style.borderColor=col;e.style.color=col;e.style.background=f.inMe?'rgba(255,255,255,.12)':''}})}
+  else{setT('timer',M.mode==='zombie'?`第 ${M.wave} 波`:M.mode==='duel'?`第 ${Math.max(1,M.round)} 回合`:clock(M.cqLeft||0));setT('carry',String(M.stats.score));
+    const mine=P.team===2?2:1,oth=mine===1?2:1;
+    if(M.mode==='conquest'){setT('tk1',String(Math.max(0,M.tickets[mine])));setT('tk2',String(Math.max(0,M.tickets[oth])))}
+    else if(M.mode==='tdm'||M.mode==='relic'){setT('tk1',String(M.score[mine]));setT('tk2',String(M.score[oth]))}
+    else if(M.mode==='duel'){setT('tk1',String(M.rounds[1]));setT('tk2',String(M.rounds[2]))}
+    else if(M.mode==='zombie'){setT('tk1',String(bots.filter(b=>!b.dead).length+(M.toSpawn||0)));setT('tk2',M.waveState==='prep'?Math.ceil(Math.max(0,M.waveT))+'s':'')}
+    else{const top=ffaBoard()[0];setT('tk1',String(M.stats.kills));setT('tk2',top.me?'領先':String(top.kills))}
+    W.flags.forEach((f,i)=>{const e=$('fc'+i);if(!e)return;const col=f.owner===mine?'#4a8cff':f.owner?'#ff4b3e':'#888';if(e._c!==col+f.inMe){e._c=col+f.inMe;e.style.borderColor=col;e.style.color=col;e.style.background=f.inMe?'rgba(255,255,255,.12)':''}});
+    if(UI.scoreOpen&&M.frame%20===0)renderScore()}
   setT('kills',`擊殺 ${M.stats.kills} · 爆頭 ${M.stats.heads}`);
   $('hpFill').style.width=P.hp+'%';$('hpFill').style.background=P.hp<35?'var(--danger)':'var(--text)';setT('hpNum',P.downed?'倒地':String(Math.ceil(P.hp)));
   setT('helmT',P.helmet.tier?['','Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ'][P.helmet.tier]+' 盔':'頭盔');$('helmFill').style.width=(P.helmet.max?P.helmet.dur/P.helmet.max*100:0)+'%';setT('helmNum',P.helmet.tier?`${Math.ceil(P.helmet.dur)}/${P.helmet.max}`:'—');
@@ -161,10 +176,37 @@ function hud(dt){
   const tb=(id,down,up)=>{const el=$(id);el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();if(!M.running||!P)return;initAudio();down&&down(e)},{passive:false});const end=e=>{e.preventDefault();up&&up(e)};el.addEventListener('touchend',end,{passive:false});el.addEventListener('touchcancel',end,{passive:false});return el};
   tb('tReload',()=>startReload());tb('tJump',()=>{keys.Space=true;setTimeout(()=>keys.Space=false,140)});
   tb('tCrouch',()=>{if(P.sprint&&P.onGround&&P.slideT<=0)startSlide();else P.crouchOn=!P.crouchOn});tb('tAds',()=>P.alive&&toggleADS());tb('tKnife',()=>quickMelee());
-  tb('tNade',()=>throwNade());tb('tHeal',()=>startHeal());tb('tLight',()=>toggleTorch());tb('tInv',()=>toggleInventory());tb('tMap',()=>toggleBigMap());
+  tb('tNade',()=>startCharge(),()=>releaseThrow());tb('tHeal',()=>startHeal());tb('tLight',()=>toggleTorch());tb('tInv',()=>{if(M.mode==='extract')toggleInventory();else UI.scoreboard(!UI.scoreOpen)});tb('tMap',()=>toggleBigMap());
   tb('tS1',()=>useSkill('s1'));tb('tS2',()=>useSkill('s2'));tb('tS3',()=>useSkill('s3'));
   tb('tUse',()=>{keys.KeyE=true;tapInteract()},()=>{keys.KeyE=false});tb('tPause',()=>pauseGame());
   const fire=tb('tFire',e=>{const t=e.changedTouches[0];touchS.fireId=t.identifier;touchS.fx=t.clientX;touchS.fy=t.clientY;mouse.l=true;mouse.lPressed=true},()=>{mouse.l=false;touchS.fireId=null});
   fire.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===touchS.fireId){lookDX+=(t.clientX-touchS.fx)*TS;lookDY+=(t.clientY-touchS.fy)*TS;touchS.fx=t.clientX;touchS.fy=t.clientY}},{passive:false});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&M.running)pauseGame()});
 })();
+
+/* ---------- click to play (pointer lock needs a click) ---------- */
+UI.needClick=()=>{if(isTouch){return}$('clickPlay').hidden=false};
+$('clickPlay').addEventListener('click',()=>{initAudio();$('clickPlay').hidden=true;lockPointer(true)});
+/* ---------- countdown ---------- */
+UI.countdown=t=>{const el=$('countdown');if(t<=0){el.hidden=true;return}el.hidden=false;const v=String(Math.ceil(t));if(el.textContent!==v){el.textContent=v;blip(660,.12,'square',.05)}};
+/* ---------- killcam ---------- */
+UI.killcamOn=false;let kc=null;
+UI.killcam=(pos,name,weapon,done)=>{UI.killcamOn=true;kc={pos,t:2.8,done,from:camera.position.clone()};const el=$('killcam');el.hidden=false;$('kcName').textContent=name||'敵人';$('kcWeap').textContent=weapon||''};
+UI.skipKillcam=()=>{if(!kc)return;kc.t=0};
+function killcamTick(dt){if(!UI.killcamOn||!kc)return;kc.t-=dt;const tp=kc.pos;const dir=_e1.set(kc.from.x-tp.x,0,kc.from.z-tp.z);const L=dir.length()||1;dir.multiplyScalar(1/L);
+  const k=clamp(1-kc.t/2.8,0,1);camera.position.set(tp.x+dir.x*lerp(L,4,Math.min(1,k*2)),tp.y+2.2,tp.z+dir.z*lerp(L,4,Math.min(1,k*2)));camera.lookAt(tp.x,tp.y+1.4,tp.z);
+  if(kc.t<=0){UI.killcamOn=false;$('killcam').hidden=true;const d=kc.done;kc=null;d&&d()}}
+/* ---------- scoreboard ---------- */
+UI.scoreOpen=false;UI.scoreboard=show=>{UI.scoreOpen=show;$('score').hidden=!show;if(show)renderScore()};
+function renderScore(){const el=$('scoreBody');const rows=[];
+  rows.push({name:(PF.nick||'你')+'（你）',team:P.team,k:M.stats.kills,d:M.stats.deaths,a:M.stats.assists,gg:P.gg||0,me:true});
+  for(const k in netPuppets){const p=netPuppets[k];const ps=M.pstats[k]||{k:0,d:0};rows.push({name:p.nick,team:p.team,k:ps.k,d:ps.d,gg:ps.gg||0})}
+  for(const b of bots)if(b.kind==='soldier'||b.kind==='gunman')rows.push({name:b.name,team:b.team,k:b.kills,d:b.deaths,gg:b.gg||0,bot:true});
+  const ffa=MODES[M.mode].ffa;rows.sort((a,b)=>M.mode==='gungame'?b.gg-a.gg||b.k-a.k:b.k-a.k);
+  const tbl=(list,title,col)=>`<div class="sbt"><h3 style="color:${col}">${title}</h3><table><tr><th>玩家</th>${M.mode==='gungame'?'<th>等級</th>':''}<th>擊殺</th><th>陣亡</th></tr>${list.map(r=>`<tr class="${r.me?'me':''}"><td>${esc(r.name)}${r.bot?' <small>AI</small>':''}</td>${M.mode==='gungame'?`<td>${r.gg+1}</td>`:''}<td>${r.k}</td><td>${r.d}</td></tr>`).join('')}</table></div>`;
+  if(ffa||M.mode==='zombie'||M.mode==='duel')el.innerHTML=tbl(rows,MODES[M.mode].name,'var(--amber)');
+  else{const mine=P.team;el.innerHTML=tbl(rows.filter(r=>r.team===mine),'我方','#72c8f5')+tbl(rows.filter(r=>r.team!==mine),'敵方','#ff6b5e')}}
+/* ---------- chat ---------- */
+UI.openChat=()=>{const i=$('chatInput');i.hidden=false;i.value='';i.focus();unlockPointer();UI.chatting=true};
+$('chatInput').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){netChat($('chatInput').value);$('chatInput').hidden=true;UI.chatting=false;lockPointer(true)}else if(e.key==='Escape'){$('chatInput').hidden=true;UI.chatting=false;lockPointer(true)}});
+UI.chatLine=(n,m)=>{const d=document.createElement('div');const b=document.createElement('b');b.textContent=n+'：';d.appendChild(b);d.appendChild(document.createTextNode(m));$('chatLines').appendChild(d);while($('chatLines').children.length>6)$('chatLines').firstChild.remove();setTimeout(()=>d.remove(),12000);blip(1200,.04,'triangle',.03)};

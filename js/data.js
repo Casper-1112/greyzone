@@ -106,10 +106,27 @@ const OPERATORS={
 
 /* ================= maps meta ================= */
 const MAPS={
-  town:{name:'灰區鎮',half:125,desc:'街區、指揮所、銀行金庫。巷戰與屋頂狙擊。',size:'250 × 250 m'},
-  harbor:{name:'鐵鏽港',half:150,desc:'貨櫃迷宮、吊臂、貨輪甲板、伺服器機房。',size:'300 × 300 m'},
-  frost:{name:'寒脊研究站',half:140,desc:'雪原、岩脊、地堡與研究實驗室。',size:'280 × 280 m'},
+  town:{name:'灰區鎮',half:165,desc:'街區、指揮所、銀行金庫、滑索與屋頂狙擊。',size:'330 × 330 m'},
+  harbor:{name:'鐵鏽港',half:190,desc:'貨櫃迷宮、吊臂電梯、貨輪甲板、伺服器機房。',size:'380 × 380 m'},
+  frost:{name:'寒脊研究站',half:175,desc:'雪林、岩脊、毒氣實驗室、地堡與探照燈。',size:'350 × 350 m'},
+  dam:{name:'斷河水壩',half:180,desc:'峽谷河道、三座大橋、水壩頂、發電廠與森林。',size:'360 × 360 m'},
+  warehouse:{name:'沙暴倉庫',half:62,desc:'近距離巷戰：大倉庫、天橋、跳板。適合對決與團戰。',size:'124 × 124 m'},
 };
+const MODES={
+  extract:{name:'烽火撤離',tag:'搜刮 · 撤離',desc:'搜物資、打守軍，活著撤離才能帶走。裝備會遺失。',solo:true},
+  conquest:{name:'全面戰場',tag:'據點 · 兵力',desc:'兩軍搶 5 個據點，扣光敵方兵力獲勝。',team:true,respawn:true},
+  tdm:{name:'團隊死鬥',tag:'團隊 · 對戰',desc:'藍紅兩隊對打，先拿到 50 殺的隊伍獲勝。可以和朋友互打。',team:true,respawn:true,pvp:true},
+  relic:{name:'奪取聖物',tag:'團隊 · 搶奪',desc:'搶中央的聖物帶回自家基地，先得 5 分獲勝。',team:true,respawn:true,pvp:true},
+  zombie:{name:'殭屍圍城',tag:'特殊 · 合作',desc:'守住據點撐過 10 波屍潮。手槍爆頭傷害 ×3，子彈無限。',special:true,pistolFriendly:true},
+  oitc:{name:'一發入魂',tag:'特殊 · 手槍',desc:'所有人只有一顆子彈，一發必死。擊殺補一發，先 15 殺獲勝。',special:true,ffa:true,respawn:true,pistolFriendly:true},
+  gungame:{name:'槍王之王',tag:'特殊 · 個人',desc:'每殺一人換下一把槍，最後用刀擊殺就贏。被刀殺會降級。',special:true,ffa:true,respawn:true},
+  duel:{name:'西部對決',tag:'特殊 · 手槍',desc:'手槍一對一回合制，倒數後拔槍，先贏 5 回合。',special:true,pistolFriendly:true},
+};
+const MUTATORS={lowgrav:'低重力',bighead:'巨頭',headonly:'只限爆頭',infammo:'無限彈藥',pistolonly:'只用手槍',hardcore:'一擊必殺'};
+const GUNGAME=['l60','m7','kv47','v9','k12','d14','r90','d50','p9','knife'];
+const BOT_NAMES=['獵鷹','灰狼','夜梟','鐵砧','山貓','禿鷲','黑蛇','雷鳥','野狗','銀狐','赤蠍','冰熊','鬣狗','青隼','石虎','獨角','孤鷹','蒼狼','暗鴉','火蟻'];
+const botName=id=>BOT_NAMES[id%BOT_NAMES.length]+(10+(id*7)%90);
+const DEFAULT_PRESETS=[{name:'A 突擊',p1:'m7',p2:null,pistol:'p9'},{name:'B 狙擊',p1:'r90',p2:'v9',pistol:'p9'},{name:'C 近戰',p1:'k12',p2:null,pistol:'d50'}];
 const DIFFS={easy:{name:'簡單',acc:.55,dmg:.6,react:.35,squad:1.6,heavy:.08,tier:1,loot:1},normal:{name:'普通',acc:.85,dmg:.9,react:0,squad:1,heavy:.15,tier:2,loot:1.15},hard:{name:'困難',acc:1.05,dmg:1.15,react:-.12,squad:.8,heavy:.25,tier:3,loot:1.35},hell:{name:'地獄',acc:1.3,dmg:1.45,react:-.22,squad:.6,heavy:.35,tier:4,loot:1.6}};
 
 /* ================= profile (stash / money) ================= */
@@ -126,7 +143,8 @@ function defaultProfile(){return{
   loadout:{p1:'m7',p2:null,pistol:'p9',helmet:'h1',armor:'a1',rig:'rig1',bag:'bag1',pouch:'pouch0',meds:3,nades:2},
   operator:'gale',
   nick:'',
-  settings:{sens:1.2,tod:'day',diff:'normal',count:'mid',time:'20',map:'town',mode:'extract',quality:'auto'},
+  settings:{sens:1.2,adsSens:1,vol:.75,fov:78,quality:'auto',adsMode:'toggle',hitSnd:true,killVoice:true,fps:false,killcam:true,tod:'day',diff:'normal',count:'mid',time:'20',map:'town',mode:'extract',mut:[],ff:false,pickup:true,pub:true},
+  presets:JSON.parse(JSON.stringify(DEFAULT_PRESETS)),preset:0,
   stats:{raids:0,extracts:0,kills:0,best:0},
 }}
 let PF=defaultProfile();

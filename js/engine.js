@@ -5,6 +5,7 @@ const TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t;
 const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.random()*a.length|0];
 function mulberry(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 let SR=mulberry(1);const srnd=(a,b)=>a+SR()*(b-a),spick=a=>a[SR()*a.length|0];
+let GRAV=20;const BASEFOV=()=>(typeof PF!=='undefined'&&PF.settings.fov)||78;
 const isTouch=(('ontouchstart' in window)||navigator.maxTouchPoints>0)&&matchMedia('(pointer:coarse)').matches;
 const angDiff=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 
@@ -30,6 +31,8 @@ const sunDir=new T.Vector3(70,95,40).normalize();
 const flashLight=new T.PointLight(0xffc070,0,10,2);scene.add(flashLight);let flashI=0;
 const torch=new T.SpotLight(0xfff0d0,0,60,.36,.5,1.2);torch.position.set(.2,-.15,0);camera.add(torch);camera.add(torch.target);torch.target.position.set(0,-.4,-10);
 const lampLights=[];for(let i=0;i<4;i++){const l=new T.PointLight(0xffb060,0,28,1.6);l.position.set(0,-50,0);scene.add(l);lampLights.push(l)}
+function applyQuality(){const q=PF.settings.quality==='auto'?(isTouch?'low':'high'):PF.settings.quality;renderer.setPixelRatio(Math.min({low:.85,mid:1.1,high:1.5}[q]||1,window.devicePixelRatio||1));
+  const ms={low:1024,mid:2048,high:2048}[q]||2048;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}resize()}
 function updateShadowCam(){const p=camera.position,s=140/SHS;const cx=Math.round(p.x/s)*s,cz=Math.round(p.z/s)*s;sun.target.position.set(cx,0,cz);sun.position.set(cx+sunDir.x*150,sunDir.y*150,cz+sunDir.z*150)}
 
 /* ================= textures / themes ================= */
@@ -54,6 +57,10 @@ const THEMES={
     sky:{day:0x9fb0b8,dusk:0xb07a62,night:0x0a101c},mtn:0x6a7680,water:0x2c4a5a},
   frost:{ground:'#d9dde2',road:'#9aa2aa',wallA:'#a8a8a2',wallB:'#8f979c',wallC:'#b5b0a4',dark:'#5a6064',roof:'#4c5257',wood:'#6d5134',sand:'#b9b9b0',rock:'#6f737a',metal:'#454b52',floor:'#7c8084',snowy:true,
     sky:{day:0xc5d2de,dusk:0xc89a8a,night:0x0b1220},mtn:0xb8c4d0},
+  dam:{ground:'#5b6644',road:'#4a4a44',wallA:'#9a968a',wallB:'#868a84',wallC:'#a8a294',dark:'#585c56',roof:'#4e4c48',wood:'#6d5134',sand:'#86805e',rock:'#6a6a60',metal:'#454b52',floor:'#6a665e',
+    sky:{day:0xa9bcc6,dusk:0xb98468,night:0x0a1018},mtn:0x5f6f58},
+  warehouse:{ground:'#a08a64',road:'#5a5244',wallA:'#b0a184',wallB:'#9c8f78',wallC:'#b8a88a',dark:'#6a6052',roof:'#5c564c',wood:'#806038',sand:'#9a8a60',rock:'#8a7a62',metal:'#4a4a46',floor:'#7a6e5c',
+    sky:{day:0xc9ad84,dusk:0xc0805a,night:0x0d0f18},mtn:0xa0886a},
 };
 const MAT={};let THEME=THEMES.town;
 function buildMaterials(themeId){
@@ -213,7 +220,7 @@ function updateFX(dt){
 
 /* ================= audio ================= */
 let ac=null,master=null,noiseBuf=null;
-function initAudio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();master=ac.createGain();master.gain.value=.75;const comp=ac.createDynamicsCompressor();master.connect(comp);comp.connect(ac.destination);
+function initAudio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();master=ac.createGain();master.gain.value=PF.settings.vol;const comp=ac.createDynamicsCompressor();master.connect(comp);comp.connect(ac.destination);
   noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}catch(e){ac=null}}
   if(ac&&ac.state==='suspended')ac.resume()}
 function aout(pan){if(!ac)return null;if(pan&&ac.createStereoPanner){const p=ac.createStereoPanner();p.pan.value=clamp(pan,-1,1);p.connect(master);return p}return master}

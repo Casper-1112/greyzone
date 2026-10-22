@@ -1,14 +1,14 @@
 'use strict';
 /* ================= hub: deploy / stash / gunsmith / shop / operators / net / help ================= */
 const Hub={tab:'deploy',shopCat:'weapons',gsW:null};
-const TABS=[['deploy','出擊'],['stash','倉庫'],['gun','改槍台'],['shop','商店'],['ops','探員'],['net','連線'],['help','操作說明']];
+const TABS=[['deploy','出擊'],['stash','倉庫'],['gun','改槍台'],['shop','商店'],['ops','探員'],['net','連線'],['set','設定'],['help','說明']];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function h(tag,attrs={},...kids){const e=document.createElement(tag);for(const k in attrs){if(k==='on')for(const ev in attrs.on)e.addEventListener(ev,attrs.on[ev]);else if(k==='html')e.innerHTML=attrs[k];else if(k==='text')e.textContent=attrs[k];else if(attrs[k]!==false&&attrs[k]!=null)e.setAttribute(k,attrs[k])}for(const c of kids)if(c!=null)e.append(c);return e}
 function sec(title,...kids){return h('div',{class:'sec'},h('h2',{text:title}),...kids)}
 function seg(cur,opts,onPick){const d=h('div',{class:'seg'});for(const [v,l] of opts)d.append(h('button',{type:'button','aria-pressed':String(v===cur),text:l,on:{click:()=>{onPick(v);Hub.render()}}}));return d}
 Hub.render=function(){$('money').textContent=fmt(PF.money);const tabs=$('tabs');tabs.innerHTML='';
   for(const [id,l] of TABS)tabs.append(h('button',{type:'button',role:'tab','aria-selected':String(Hub.tab===id),text:l,on:{click:()=>{Hub.tab=id;Hub.render()}}}));
-  const p=$('panel');p.innerHTML='';p.scrollTop=0;({deploy:tabDeploy,stash:tabStash,gun:tabGun,shop:tabShop,ops:tabOps,net:tabNet,help:tabHelp})[Hub.tab](p);
+  const p=$('panel');p.innerHTML='';p.scrollTop=0;({deploy:tabDeploy,stash:tabStash,gun:tabGun,shop:tabShop,ops:tabOps,net:tabNet,set:tabSettings,help:tabHelp})[Hub.tab](p);
   if(Hub.tab!=='gun')gsStop()};
 const S_=()=>PF.settings;
 function setSetting(k,v){S_()[k]=v;savePF();if(k==='map'||k==='tod'){hubWorld()}}
@@ -24,35 +24,43 @@ function fixLoadout(){const lo=PF.loadout;const pr=loadoutProblems();if(!pr.leng
   const used={};const ok=w=>{if(!w)return true;if(WEAPONS[w].free)return true;used[w]=(used[w]||0)+1;return used[w]<=ownCount('weapons',w)};
   if(!ok(lo.p1))lo.p1=null;if(!ok(lo.p2))lo.p2=null;if(lo.pistol&&!WEAPONS[lo.pistol].free&&ownCount('weapons',lo.pistol)<1)lo.pistol='p9';
   const base={helmet:'h0',armor:'a0',rig:'rig0',bag:'bag0',pouch:'pouch0'};for(const k in base)if(GEAR[k][lo[k]].price>0&&ownCount('gear',lo[k])<1)lo[k]=base[k];savePF()}
-function tabDeploy(p){const st=S_();
-  p.append(sec('模式',h('div',{class:'cards'},
-    ...[['extract','烽火撤離','搜刮物資、擊敗守軍，活著撤離才能帶走戰利品。'],['conquest','全面戰場','兩軍搶奪 5 個據點，耗盡敵方兵力即獲勝。裝備免費、不會遺失。']].map(([id,n,d])=>h('button',{class:'card',type:'button','aria-pressed':String(st.mode===id),on:{click:()=>{setSetting('mode',id);Hub.render()}}},h('b',{text:n}),h('small',{text:d}))))));
-  p.append(sec('地圖',h('div',{class:'cards'},...Object.entries(MAPS).map(([id,m])=>h('button',{class:'card',type:'button','aria-pressed':String(st.map===id),on:{click:()=>{setSetting('map',id);Hub.render()}}},h('b',{text:m.name}),h('small',{text:m.size+' · '+m.desc}))))));
+function tabDeploy(p){const st=S_();const inRoom=NET.status==='hosting'||NET.status==='joined';const isClient=inRoom&&!NET.isHost;
+  if(isClient&&NET.hostSet){const hs=NET.hostSet;p.append(sec('房主設定',h('div',{class:'chips'},h('span',{class:'chip',text:MODES[hs.mode].name}),h('span',{class:'chip',text:MAPS[hs.map].name}),h('span',{class:'chip',text:DIFFS[hs.diff].name}),...(hs.mut||[]).map(m=>h('span',{class:'chip',text:MUTATORS[m]}))),h('p',{class:'hint',text:'模式和地圖由房主決定。你可以先調整自己的配裝與探員。'})))}
+  else{
+  const mg=h('div',{id:'modeGrid'});for(const id in MODES){const m=MODES[id];mg.append(h('button',{class:'mcard'+(m.pistolFriendly?' pf':''),type:'button','aria-pressed':String(st.mode===id),on:{click:()=>{setSetting('mode',id);if(id==='duel'&&st.map!=='warehouse')setSetting('map','warehouse');Hub.render()}}},
+    h('span',{class:'tg',text:m.tag+(m.pistolFriendly?' · 手槍友善':'')}),h('b',{text:m.name}),h('small',{text:m.desc})))}
+  p.append(sec('1　選模式',mg));
+  p.append(sec('2　選地圖',h('div',{class:'cards'},...Object.entries(MAPS).map(([id,m])=>h('button',{class:'card',type:'button','aria-pressed':String(st.map===id),on:{click:()=>{setSetting('map',id);Hub.render()}}},h('b',{text:m.name}),h('small',{text:m.size+' · '+m.desc}))))));
+  const mut=h('div',{class:'chips'});for(const k in MUTATORS){const on=st.mut.includes(k);mut.append(h('button',{type:'button',class:'chip tog','aria-pressed':String(on),text:MUTATORS[k],on:{click:()=>{st.mut=on?st.mut.filter(x=>x!==k):[...st.mut,k];savePF();Hub.render()}}}))}
+  p.append(sec('3　趣味規則（可複選）',mut,h('p',{class:'hint',style:'margin:0',text:'「只用手槍」配「一擊必殺」或「巨頭」最刺激。低重力可以跳上屋頂。'})));
   const s=h('div',{class:'settings'});
   s.append(h('span',{text:'難度'}),seg(st.diff,Object.entries(DIFFS).map(([k,v])=>[k,v.name]),v=>setSetting('diff',v)));
-  s.append(h('span',{text:st.mode==='conquest'?'每隊人數':'敵人數量'}),seg(st.count,st.mode==='conquest'?[['few','6'],['mid','10'],['many','14'],['max','18']]:[['few','少'],['mid','中'],['many','多'],['max','爆量']],v=>setSetting('count',v)));
+  s.append(h('span',{text:MODES[st.mode].team?'每隊人數':'敵人數量'}),seg(st.count,[['few','少'],['mid','中'],['many','多'],['max','爆量']],v=>setSetting('count',v)));
   s.append(h('span',{text:'時限'}),seg(st.time,[['10','10 分'],['15','15 分'],['20','20 分'],['30','30 分']],v=>setSetting('time',v)));
   s.append(h('span',{text:'時段'}),seg(st.tod,[['day','白天'],['dusk','黃昏'],['night','夜戰']],v=>setSetting('tod',v)));
-  const sens=h('input',{type:'range',id:'sens',min:'.3',max:'3',step:'.05',value:String(st.sens)});const sv=h('span',{text:st.sens.toFixed(2),style:'font-family:var(--f-num);font-size:13px'});
-  sens.addEventListener('input',()=>{st.sens=+sens.value;sv.textContent=st.sens.toFixed(2);savePF()});
-  s.append(h('label',{for:'sens',text:'靈敏度'}),h('div',{style:'display:flex;gap:10px;align-items:center'},sens,sv));
-  p.append(sec('設定',s));
+  p.append(h('details',{class:'adv',open:Hub.advOpen?'':null,on:{toggle:e=>{Hub.advOpen=e.target.open}}},h('summary',{text:`進階：${DIFFS[st.diff].name} · ${({few:'少',mid:'中',many:'多',max:'爆量'})[st.count]} · ${st.time} 分 · ${({day:'白天',dusk:'黃昏',night:'夜戰'})[st.tod]}`}),h('div',{style:'margin-top:10px'},s)))}
   const op=OPERATORS[PF.operator];
   p.append(sec('探員',h('div',{class:'lrow'},h('span',{class:'lbl',text:op.role}),h('b',{text:op.name+'　'+op.s1.name+' / '+op.s2.name+' / '+op.s3.name}),h('button',{class:'mini',type:'button',text:'更換',on:{click:()=>{Hub.tab='ops';Hub.render()}}}))));
-  if(st.mode==='extract'){fixLoadout();const lo=PF.loadout;const pr=loadoutProblems();
-    const items=[['主武器',lo.p1?WEAPONS[lo.p1].name:'無'],['副武器',lo.p2?WEAPONS[lo.p2].name:'無'],['手槍',WEAPONS[lo.pistol||'p9'].name],['頭盔',GEAR.helmet[lo.helmet].name],['護甲',GEAR.armor[lo.armor].name],['胸掛',GEAR.rig[lo.rig].name],['背包',GEAR.bag[lo.bag].name],['彈掛',GEAR.pouch[lo.pouch].name],['保險箱',GEAR.safe[PF.safe].name+` (${GEAR.safe[PF.safe].cap} 格)`]];
+  const mode=isClient&&NET.hostSet?NET.hostSet.mode:st.mode;
+  if(mode==='extract'){fixLoadout();const lo=PF.loadout;const pr=loadoutProblems();
+    const items=[['主武器',lo.p1?WEAPONS[lo.p1].name:'無'],['副武器',lo.p2?WEAPONS[lo.p2].name:'無'],['手槍',WEAPONS[lo.pistol||'p9'].name],['頭盔',GEAR.helmet[lo.helmet].name],['護甲',GEAR.armor[lo.armor].name],['背包',GEAR.bag[lo.bag].name],['保險箱',GEAR.safe[PF.safe].cap+' 格']];
     const box=h('div',{class:'chips'});for(const [k,v] of items)box.append(h('span',{class:'chip',text:k+'：'+v}));
-    p.append(sec('攜帶裝備（陣亡會遺失，保險箱內物品除外）',box,h('div',{class:'btns'},h('button',{class:'mini',type:'button',text:'到倉庫調整配裝',on:{click:()=>{Hub.tab='stash';Hub.render()}}})),pr.length?h('p',{class:'warn',text:pr.join('、')}):null))}
-  else p.append(sec('戰場配裝',h('p',{class:'hint',text:'全面戰場使用你在倉庫選的主武器、副武器與手槍，以及改槍台的配件。統一配發三級頭盔與護甲、兩個急救包與手榴彈，陣亡後重生，裝備不會遺失。'})));
-  const inRoom=NET.status==='hosting'||NET.status==='joined';
-  const btn=h('button',{class:'go',type:'button',text:inRoom?(NET.isHost?'開始連線對局':'等待房主開始'):'出擊'});if(inRoom&&!NET.isHost)btn.disabled=true;
-  btn.onclick=()=>{initAudio();const cfg={mode:st.mode,map:st.map,diff:st.diff,tod:st.tod,time:st.time,count:st.count,seed:(Math.random()*1e9)|0,spawnIdx:Math.random()*4|0,tickets:{10:150,15:200,20:260,30:350}[st.time]};
-    if(st.mode==='conquest'){PF.cqLoadout=Object.assign({},PF.loadout,{helmet:'h2',armor:'a3',rig:'rig1',bag:'bag0',pouch:'pouch2',meds:2,nades:2})}
+    p.append(sec('攜帶裝備（陣亡會遺失）',box,h('div',{class:'btns'},h('button',{class:'mini',type:'button',text:'到倉庫調整',on:{click:()=>{Hub.tab='stash';Hub.render()}}})),pr.length?h('p',{class:'warn',text:pr.join('、')}):null))}
+  else if(mode==='conquest'||mode==='tdm'||mode==='relic'||mode==='zombie'){const g=h('div',{class:'cards'});PF.presets.forEach((pr,i)=>g.append(h('button',{class:'card',type:'button','aria-pressed':String(PF.preset===i),on:{click:()=>{PF.preset=i;savePF();Hub.render()}}},h('b',{text:pr.name}),h('small',{text:[pr.p1,pr.p2,pr.pistol].filter(Boolean).map(w=>WEAPONS[w].name).join(' · ')}))));
+    p.append(sec('配裝（免費，不會遺失 · 戰鬥中按 F1–F3 切換）',g,h('div',{class:'btns'},h('button',{class:'mini',type:'button',text:'編輯配裝',on:{click:()=>{Hub.tab='stash';Hub.render()}}}))))}
+  else p.append(sec('配裝',h('p',{class:'hint',text:mode==='duel'?`西部對決只能用手槍（目前：${WEAPONS[PF.loadout.pistol||'p9'].name}，可到倉庫更換）。`:mode==='oitc'?'一發入魂統一配發 D50 手槍與戰術刀。':'槍王之王會依擊殺自動換槍。'})));
+  const sm=isClient&&NET.hostSet?NET.hostSet:st;
+  const btn=h('button',{class:'go',type:'button',text:inRoom?(NET.isHost?'開始連線對局':'等待房主開始'):'出擊'});if(isClient)btn.disabled=true;
+  btn.onclick=()=>{initAudio();const cfg={mode:st.mode,map:st.map,diff:st.diff,tod:st.tod,time:st.time,count:st.count,mut:st.mut.slice(),seed:(Math.random()*1e9)|0,spawnIdx:Math.random()*4|0,tickets:{10:150,15:200,20:260,30:350}[st.time],room:{ff:!!st.ff,pickup:st.pickup!==false,killcam:st.killcam!==false}};
     if(inRoom&&NET.isHost)netStartGame(cfg);else startMatch(cfg)};
-  p.append(h('div',{class:'btns'},btn),inRoom?h('p',{class:'hint',text:`連線房間 ${NET.code} · ${Object.keys(NET.members).length} 人`}):null)}
+  p.append(h('div',{id:'deployBar'},h('div',{class:'sum',text:`${MODES[sm.mode].name} · ${MAPS[sm.map].name} · ${DIFFS[sm.diff].name}${(sm.mut||[]).length?' · '+sm.mut.map(m=>MUTATORS[m]).join('、'):''}${inRoom?` · 房間 ${NET.code}（${Object.keys(NET.members).length} 人）`:''}`}),btn))}
 
 /* ---------- stash ---------- */
 function tabStash(p){const lo=PF.loadout;fixLoadout();
+  {const all=Object.keys(WEAPONS);const longs=all.filter(w=>WEAPONS[w].slot==='long'),pis=all.filter(w=>WEAPONS[w].slot==='pistol');const box=h('div',{class:'list'});
+   PF.presets.forEach((pr,i)=>{const mk=(key,list,none)=>{const sl=h('select');if(none)sl.append(h('option',{value:'',text:'無'}));for(const w of list){const o=h('option',{value:w,text:WEAPONS[w].name});if(pr[key]===w)o.selected=true;sl.append(o)}sl.onchange=()=>{pr[key]=sl.value||null;savePF()};return sl};
+     box.append(h('div',{class:'lrow',style:'grid-template-columns:70px 1fr 1fr 1fr'},h('b',{text:pr.name}),mk('p1',longs,true),mk('p2',longs,true),mk('pistol',pis,false)))});
+   p.append(sec('重生模式配裝 A / B / C（全面戰場、團隊死鬥、奪取聖物、殭屍圍城使用，免費不會遺失）',box))}
   const sel=(label,cur,opts,onChange,meta)=>{const s=h('select');for(const [v,l] of opts){const o=h('option',{value:v,text:l});if(v===(cur||''))o.selected=true;s.append(o)}s.onchange=()=>{onChange(s.value||null);savePF();Hub.render()};return h('div',{class:'lrow'},h('span',{class:'lbl',text:label}),s,h('span',{class:'meta',text:meta||''}))};
   const longs=Object.keys(WEAPONS).filter(w=>WEAPONS[w].slot==='long'&&ownCount('weapons',w)>0);
   const wopts=[['','無'],...longs.map(w=>[w,`${WEAPONS[w].name}（擁有 ${ownCount('weapons',w)}）`])];
@@ -134,26 +142,54 @@ function tabOps(p){const g=h('div',{class:'opgrid'});for(const id in OPERATORS){
   p.append(sec('選擇探員',g))}
 
 /* ---------- net ---------- */
+function copyText(t,btn){const ok=()=>{if(btn){const o=btn.textContent;btn.textContent='已複製';setTimeout(()=>btn.textContent=o,1200)}};try{navigator.clipboard.writeText(t).then(ok,()=>prompt?0:0)}catch(e){}}
 function tabNet(p){const av=netAvailable();
-  p.append(sec('好友連線',h('p',{class:'hint',text:'一人建立房間，把房號告訴朋友，朋友輸入房號加入。房主在「出擊」頁選好模式與地圖後按「開始連線對局」。烽火撤離最多 4 人合作，全面戰場的玩家全部在藍隊。敵人由房主的電腦模擬，房主網路越穩越好。'})));
-  if(!av.ok){p.append(h('p',{class:'warn',text:av.why}));}
+  if(!av.ok)p.append(h('p',{class:'warn',text:av.why}));
   const nick=h('input',{type:'text',maxlength:'12',placeholder:'你的暱稱',value:PF.nick||''});nick.addEventListener('change',()=>{PF.nick=nick.value.trim().slice(0,12);savePF()});
-  const code=h('input',{type:'text',maxlength:'6',placeholder:'房號',style:'text-transform:uppercase;width:120px'});
-  const box=h('div',{class:'netbox'},h('div',{class:'lrow'},h('span',{class:'lbl',text:'暱稱'}),nick,h('span')));
+  const saveNick=()=>{PF.nick=nick.value.trim().slice(0,12)||PF.nick||('玩家'+(Math.random()*900+100|0));savePF()};
+  p.append(sec('暱稱',nick));
   const inRoom=NET.status!=='idle';
-  if(!inRoom){box.append(h('div',{class:'btns'},h('button',{class:'go',type:'button',text:'建立房間',disabled:av.ok?null:'',on:{click:()=>{PF.nick=nick.value.trim().slice(0,12);savePF();const c=Array.from({length:5},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');netCreate(true,c);Hub.render()}}})),
-    h('div',{class:'lrow'},h('span',{class:'lbl',text:'加入房間'}),code,h('button',{class:'mini',type:'button',text:'加入',disabled:av.ok?null:'',on:{click:()=>{const c=code.value.trim().toUpperCase();if(c.length<4)return;PF.nick=nick.value.trim().slice(0,12);savePF();netCreate(false,c);Hub.render()}}})))}
-  else{box.append(h('div',{class:'lrow'},h('span',{class:'lbl',text:'房號'}),h('b',{text:NET.code,style:'font-family:var(--f-num);font-size:22px;letter-spacing:.2em'}),h('button',{class:'mini',type:'button',text:'離開房間',on:{click:()=>{netLeave();Hub.render()}}})));
-    const ml=h('div',{class:'chips',id:'netMembers'});box.append(ml);
-    if(NET.isHost)box.append(h('div',{class:'btns'},h('button',{class:'go',type:'button',text:'前往出擊頁開始',on:{click:()=>{Hub.tab='deploy';Hub.render()}}})));else box.append(h('p',{class:'hint',text:'等待房主開始對局。'}))}
-  box.append(h('div',{class:'netstatus',id:'netStatus',text:Hub.netMsg||''}));if(Hub.netErr)$('netStatus')||0;
-  p.append(box);renderMembers();const st=$('netStatus');if(st&&Hub.netErr)st.classList.add('err')}
-function renderMembers(){const ml=$('netMembers');if(!ml)return;ml.innerHTML='';for(const id in NET.members){const m=NET.members[id];ml.append(h('span',{class:'chip',text:(m.host?'房主 · ':'')+m.nick+(id===NET.myId?'（你）':'')+' · '+(OPERATORS[m.op]?OPERATORS[m.op].name:'')}))}}
+  if(!inRoom){
+    if(Hub.joinCode){p.append(sec('受邀加入',h('div',{class:'btns'},h('button',{class:'go',type:'button',text:'加入房間 '+Hub.joinCode,disabled:av.ok?null:'',on:{click:()=>{saveNick();netCreate(false,Hub.joinCode);Hub.joinCode=null;Hub.render()}}}))))}
+    const code=h('input',{type:'text',maxlength:'6',placeholder:'輸入房號',style:'text-transform:uppercase;width:140px;font-size:18px;letter-spacing:.2em'});
+    p.append(sec('開房或加入',h('div',{class:'btns'},
+      h('button',{class:'go',type:'button',text:'建立房間',disabled:av.ok?null:'',on:{click:()=>{saveNick();const c=Array.from({length:5},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');netCreate(true,c);Hub.render()}}}),
+      code,h('button',{class:'ghost',type:'button',text:'加入',disabled:av.ok?null:'',on:{click:()=>{const c=code.value.trim().toUpperCase();if(c.length<4)return;saveNick();netCreate(false,c);Hub.render()}}}))));
+    const list=h('div',{class:'list',id:'pubList'},h('p',{class:'hint',text:'按「重新整理」看看有沒有人開房。'}));
+    p.append(sec('公開房間（測試功能）',h('div',{class:'btns'},h('button',{class:'mini',type:'button',text:'重新整理',disabled:av.ok?null:'',on:{click:()=>{list.innerHTML='<p class="hint">搜尋中…</p>';pubList(rows=>{list.innerHTML='';if(!rows.length){list.append(h('p',{class:'hint',text:'目前沒有公開房間。你可以自己開一間，別人重新整理就看得到。'}));return}
+      for(const r of rows)list.append(h('div',{class:'item'},h('span',{},h('span',{text:`${r.host} 的房間`}),h('small',{text:`${MODES[r.mode]?MODES[r.mode].name:''} · ${MAPS[r.map]?MAPS[r.map].name:''} · ${r.n} 人${r.playing?' · 遊戲中':''}`})),h('span',{class:'price',text:r.code}),h('button',{type:'button',text:'加入',on:{click:()=>{saveNick();netCreate(false,r.code);Hub.render()}}})))})}}})),list));
+    p.append(h('p',{class:'hint',text:'連線用 WebRTC 點對點，敵人由房主的電腦模擬。公開房間清單由正在玩的玩家互相轉發，人少時可能看不到，直接分享房號或邀請連結最穩。'}))}
+  else{const code=h('b',{text:NET.code,style:'font-family:var(--f-num);font-size:32px;letter-spacing:.24em;color:var(--amber)'});
+    const c1=h('button',{class:'mini',type:'button',text:'複製房號'});c1.onclick=()=>copyText(NET.code,c1);const c2=h('button',{class:'mini',type:'button',text:'複製邀請連結'});c2.onclick=()=>copyText(inviteLink(),c2);
+    p.append(sec('房間',h('div',{style:'display:flex;gap:12px;align-items:center;flex-wrap:wrap'},code,c1,c2,h('button',{class:'mini',type:'button',text:'離開房間',on:{click:()=>{netLeave();Hub.render()}}})),h('p',{class:'hint',style:'margin:0;user-select:text',text:'邀請連結：'+inviteLink()})));
+    const set=NET.isHost?lobbySettings():NET.hostSet;const teamMode=set&&MODES[set.mode]&&MODES[set.mode].team;
+    if(teamMode){const me=NET.members[NET.myId]||{};p.append(sec('選隊伍',seg(me.team||1,[[1,'藍隊 ALPHA'],[2,'紅隊 BRAVO']],v=>netSetTeam(v))))}
+    p.append(sec('成員',h('div',{class:'list',id:'netMembers'})));
+    if(set)p.append(sec('對局設定',h('div',{class:'chips'},h('span',{class:'chip',text:MODES[set.mode].name}),h('span',{class:'chip',text:MAPS[set.map].name}),h('span',{class:'chip',text:DIFFS[set.diff].name}),...(set.mut||[]).map(m=>h('span',{class:'chip',text:MUTATORS[m]})),h('span',{class:'chip',text:'友軍傷害 '+(set.ff?'開':'關')}),h('span',{class:'chip',text:'撿武器 '+(set.pickup!==false?'開':'關')}))));
+    if(NET.isHost)p.append(h('div',{class:'btns'},h('button',{class:'go',type:'button',text:'選模式並開始',on:{click:()=>{Hub.tab='deploy';Hub.render()}}}),h('button',{class:'ghost',type:'button',text:'房間設定',on:{click:()=>{Hub.tab='set';Hub.render()}}})));
+    else p.append(h('p',{class:'hint',text:'等待房主開始對局。'}))}
+  p.append(h('div',{class:'netstatus'+(Hub.netErr?' err':''),id:'netStatus',text:Hub.netMsg||''}));renderMembers()}
+function renderMembers(){const ml=$('netMembers');if(!ml)return;ml.innerHTML='';const set=NET.isHost?lobbySettings():NET.hostSet;const teamMode=set&&MODES[set.mode]&&MODES[set.mode].team;
+  for(const id in NET.members){const m=NET.members[id];ml.append(h('div',{class:'item'},h('span',{},h('span',{text:(m.host?'房主 · ':'')+m.nick+(id===NET.myId?'（你）':'')}),h('small',{text:OPERATORS[m.op]?OPERATORS[m.op].name:''})),h('span',{class:'price',style:teamMode?`color:${m.team===2?'#ff6b5e':'#72c8f5'}`:'',text:teamMode?(m.team===2?'紅隊':'藍隊'):''}),h('span')))}}
 UI.netStatus=(msg,err)=>{Hub.netMsg=msg;Hub.netErr=!!err;const el=$('netStatus');if(el){el.textContent=msg;el.classList.toggle('err',!!err)}if(err&&NET.status==='connecting'){NET.status='idle';if(Hub.tab==='net'&&!M.running)Hub.render()}};
-UI.netLobby=()=>{if(!M.running&&Hub.tab==='net')Hub.render();else renderMembers()};
+UI.netLobby=()=>{if(!M.running&&(Hub.tab==='net'||Hub.tab==='deploy'))Hub.render();else renderMembers()};
+
+/* ---------- settings ---------- */
+function tabSettings(p){const st=S_();const s=h('div',{class:'settings'});
+  const slider=(label,key,min,max,step,fmtf,after)=>{const i=h('input',{type:'range',id:'set_'+key,min:String(min),max:String(max),step:String(step),value:String(st[key])});const v=h('span',{text:fmtf(st[key]),style:'font-family:var(--f-num);font-size:13px;min-width:46px'});
+    i.addEventListener('input',()=>{st[key]=+i.value;v.textContent=fmtf(st[key]);savePF();after&&after()});s.append(h('label',{for:'set_'+key,text:label}),h('div',{style:'display:flex;gap:10px;align-items:center'},i,v))};
+  slider('滑鼠靈敏度','sens',.2,3,.05,v=>v.toFixed(2));slider('開鏡靈敏度','adsSens',.3,2,.05,v=>'×'+v.toFixed(2));slider('音量','vol',0,1,.05,v=>Math.round(v*100)+'%',()=>{if(master)master.gain.value=st.vol});slider('視野 FOV','fov',65,100,1,v=>v+'°');
+  s.append(h('span',{text:'畫質'}),seg(st.quality,[['auto','自動'],['low','低'],['mid','中'],['high','高']],v=>{st.quality=v;savePF();applyQuality()}));
+  s.append(h('span',{text:'開鏡方式'}),seg(st.adsMode,[['toggle','按一下切換'],['hold','按住瞄準']],v=>{st.adsMode=v;savePF()}));
+  const tog=(label,key)=>{s.append(h('span',{text:label}),seg(st[key]?1:0,[[1,'開'],[0,'關']],v=>{st[key]=!!v;savePF()}))};
+  tog('命中音效','hitSnd');tog('擊殺語音','killVoice');tog('陣亡回放 KILLCAM','killcam');tog('顯示 FPS','fps');
+  p.append(sec('遊戲設定',s));
+  const r=h('div',{class:'settings'});const tog2=(label,key)=>{r.append(h('span',{text:label}),seg(st[key]?1:0,[[1,'開'],[0,'關']],v=>{st[key]=!!v;savePF();if(NET.isHost)netBroadcastLobby()}))};
+  tog2('友軍傷害','ff');tog2('可撿地上武器','pickup');tog2('房間公開列出','pub');
+  p.append(sec('房間設定（你當房主時套用）',r))}
 
 /* ---------- help ---------- */
-function tabHelp(p){p.append(sec('電腦操作',h('div',{class:'keys',html:[['WASD','移動'],['Shift','衝刺'],['Shift + C','滑鏟'],['C','蹲下（切換）'],['Space','跳躍 / 爬梯'],['左鍵','射擊'],['右鍵','開鏡 / 關鏡'],['R','換彈'],['1 2 3 4','主武器 / 副武器 / 手槍 / 刀'],['滾輪','切換武器'],['V','快速近戰'],['G','手榴彈'],['H','治療'],['T','修復護甲'],['Q / Z / X','小招 / 二招 / 大招'],['E','互動（按住搜索）'],['F','手電筒'],['Tab','背包'],['M','大地圖'],['Esc','暫停']].map(([k,v])=>`<span><kbd>${k}</kbd>${v}</span>`).join('')})));
+function tabHelp(p){p.append(sec('電腦操作',h('div',{class:'keys',html:[['WASD','移動'],['Shift','衝刺'],['Shift + C','滑鏟'],['C','蹲下（切換）'],['Space','跳躍 / 翻越矮牆 / 爬梯'],['按住 G 放開','蓄力投擲手榴彈'],['右鍵兩下','狙擊鏡第二段放大'],['F1–F3','切換重生配裝'],['Tab','背包（撤離）/ 計分板'],['Enter','連線聊天'],['左鍵','射擊'],['右鍵','開鏡 / 關鏡'],['R','換彈'],['1 2 3 4','主武器 / 副武器 / 手槍 / 刀'],['滾輪','切換武器'],['V','快速近戰'],['H','治療'],['T','修復護甲'],['Q / Z / X','小招 / 二招 / 大招'],['E','互動（按住搜索）'],['F','手電筒'],['Tab','背包'],['M','大地圖'],['Esc','暫停']].map(([k,v])=>`<span><kbd>${k}</kbd>${v}</span>`).join('')})));
   p.append(sec('手機操作',h('p',{class:'hint',text:'左半邊拖曳移動，推到底自動衝刺；衝刺時按「蹲/滑」會滑鏟。右半邊拖曳轉視角，按住射擊鍵時也可以拖曳瞄準，並會輕微自動吸附敵人。靠近物資箱、門、電閘時會出現互動按鈕，按住即可。建議橫向遊玩。'})));
   p.append(sec('撤離方式',h('p',{class:'hint',html:'<b style="color:#72f5a8">常規撤離</b> 隨時可用。<b style="color:#ffb547">付費撤離</b> 在撤離點按住 E 支付倉庫資金。<b style="color:#ff4b3e">拉閘撤離</b> 要先找到黃色電閘拉下，會觸發警報。<b style="color:#9ad0ff">直升機撤離</b> 在中段時間自動開放，或發射信號彈呼叫。<b style="color:#6db5ff">無背包撤離</b> 只有沒背背包才能通過。'})));
   p.append(sec('機關',h('p',{class:'hint',text:'紅、藍色門需要對應鑰匙卡（保險櫃、敵人遺體可能掉落）。監視器發現你會拉警報並叫來增援，可以射壞。自動砲塔有 160 點耐久。門口的紅線是絆雷，跳過去或繞開。紅色油桶一槍就會連鎖爆炸。中途會有空投，物資豐厚但敵人也會趕去。'})));

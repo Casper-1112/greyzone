@@ -5,7 +5,7 @@ function makePlayer(){return{pos:new T.Vector3(),vel:new T.Vector3(),vy:0,onGrou
   hp:100,alive:true,downed:false,bleed:0,team:1,spectate:false,helmet:{id:'h0',tier:0,dur:0,max:0},armor:{id:'a0',tier:0,dur:0,max:0},
   ammo:{},ammoCap:{},slots:[],cur:0,prev:1,ads:false,adsK:0,reloadT:0,switchT:0,fireT:0,bloom:0,recoilDebt:0,vmKick:0,flashT:0,meleeT:0,healT:0,healAmt:0,healItem:null,repairT:0,nadeCd:0,
   torchOn:false,speed:0,sprint:false,bob:0,shake:0,dmgFlash:0,laddering:false,fallStart:0,
-  op:'gale',cd:{s1:0,s2:0},ult:0,buff:{speedT:0,scanT:0,godT:0,heartT:0},
+  op:'gale',cd:{s1:0,s2:0},ult:0,buff:{speedT:0,scanT:0,godT:0,heartT:0},zoomStage:1,charge:0,charging:false,zip:null,vault:null,padT:0,dmgDealt:0,assists:0,respawnT:0,
   eyeH(){return this.downed?.5:1.62-this.crouch*.6}}}
 
 /* ================= inventory ================= */
@@ -79,13 +79,14 @@ function buildKnifeVM(){const m=vmMats();const g=new T.Group();const h=new T.Mes
 function disposeVMs(){if(!P)return;for(const s of P.slots)if(s&&s.vm){vmScene.remove(s.vm.g)}}
 
 /* ================= loadout → player ================= */
+function makeSlot(wid){if(!wid||wid==='knife')return null;const b=PF.builds[wid]||{};const st=weaponStats(wid,b);return{wid,def:WEAPONS[wid],build:b,st,mag:st.mag,vm:buildVM(wid,b)}}
 function setupPlayer(lo,spawn,conquest){
   disposeVMs();P=makePlayer();P.op=PF.operator;P.pos.set(spawn.x,spawn.y||0,spawn.z);P.yaw=spawn.yaw||0;
   const H=GEAR.helmet[conquest?'h2':lo.helmet],A=GEAR.armor[conquest?'a3':lo.armor];
   P.helmet={id:lo.helmet,tier:H.tier,dur:H.dur,max:H.dur};P.armor={id:lo.armor,tier:A.tier,dur:A.dur,max:A.dur};
   const mul=GEAR.pouch[lo.pouch||'pouch0'].mul;for(const k in AMMO){P.ammoCap[k]=Math.round(AMMO[k].base*mul);P.ammo[k]=0}
-  const mk=(wid)=>{if(!wid)return null;const b=PF.builds[wid]||{};const st=weaponStats(wid,b);return{wid,def:WEAPONS[wid],build:b,st,mag:st.mag,vm:buildVM(wid,b)}};
-  P.slots=[mk(lo.p1),mk(lo.p2),mk(lo.pistol||'p9'),{knife:true,vm:buildKnifeVM()}];
+  const mk=makeSlot;
+  P.slots=MUT('pistolonly')?[null,null,mk(lo.pistol||'p9'),{knife:true,vm:buildKnifeVM()}]:[mk(lo.p1),mk(lo.p2),mk(lo.pistol||'p9'),{knife:true,vm:buildKnifeVM()}];
   P.cur=P.slots[0]?0:P.slots[1]?1:2;P.prev=2;
   INV=makeInv(conquest?{rig:'rig1',bag:'bag0'}:lo);
   if(conquest){for(const k in AMMO)P.ammo[k]=P.ammoCap[k];for(let i=0;i<2;i++){invAdd('med');invAdd('nade')}}
@@ -95,46 +96,53 @@ function setupPlayer(lo,spawn,conquest){
     if(lo.repair&&ownCount('stash','repair')>0&&invAdd('repair'))addOwn('stash','repair',-1);
     if(lo.keys){for(const k of ['keyR','keyB'])if(ownCount('stash',k)>0&&invAdd(k))addOwn('stash',k,-1)}
     if(lo.flare&&ownCount('stash','flare')>0&&invAdd('flare'))addOwn('stash','flare',-1)}
-  P.cd.s1=3;P.cd.s2=6;P.ult=conquest?30:0;P.torchOn=M.tod==='night';P.team=1;
+  P.cd.s1=3;P.cd.s2=6;P.ult=conquest?30:0;P.torchOn=M.tod==='night';P.team=1;P.slots.forEach(x=>x&&x.knife===undefined&&0);
 }
 
 /* ================= input ================= */
 const keys={},mouse={l:false,lPressed:false};let lookDX=0,lookDY=0,locked=false,fallbackLook=false,everLocked=false;
 const touchS={stickId:null,ox:0,oy:0,jx:0,jy:0,lookId:null,lx:0,ly:0,fireId:null,fx:0,fy:0};
 const GAMEKEYS=['Space','KeyW','KeyA','KeyS','KeyD','KeyC','KeyE','KeyR','KeyG','KeyH','KeyQ','KeyZ','KeyX','KeyV','KeyF','KeyT','KeyM','Tab','Digit1','Digit2','Digit3','Digit4','ShiftLeft','ShiftRight'];
-addEventListener('keydown',e=>{if(!M.running||M.paused)return;if(UI.invOpen&&e.code!=='Tab'&&e.code!=='Escape')return;keys[e.code]=true;if(GAMEKEYS.includes(e.code))e.preventDefault();if(e.repeat)return;
-  if(e.code==='Tab'){toggleInventory();return}if(e.code==='KeyM'){toggleBigMap();return}
+addEventListener('keydown',e=>{if(!M.running||M.paused||UI.chatting)return;if(UI.invOpen&&e.code!=='Tab'&&e.code!=='Escape')return;keys[e.code]=true;if(GAMEKEYS.includes(e.code))e.preventDefault();if(e.repeat)return;
+  if(e.code==='Tab'){if(M.mode==='extract')toggleInventory();else UI.scoreboard(true);return}if(e.code==='KeyM'){toggleBigMap();return}
+  if(e.code==='Enter'&&M.net){UI.openChat();e.preventDefault();return}
+  if(/^F[1-3]$/.test(e.key)&&MODES[M.mode].respawn){e.preventDefault();PF.preset=+e.key[1]-1;savePF();note('下次重生使用：'+PF.presets[PF.preset].name);return}
+  if(e.code==='Space'&&UI.killcamOn){UI.skipKillcam();return}
   if(!P||!P.alive)return;
   if(e.code==='KeyR')startReload();else if(/^Digit[1-4]$/.test(e.code))switchTo(+e.code[5]-1);else if(e.code==='KeyF')toggleTorch();
-  else if(e.code==='KeyG')throwNade();else if(e.code==='KeyH')startHeal();else if(e.code==='KeyT')startRepair();else if(e.code==='KeyV')quickMelee();
+  else if(e.code==='KeyG')startCharge();else if(e.code==='KeyH')startHeal();else if(e.code==='KeyT')startRepair();else if(e.code==='KeyV')quickMelee();
   else if(e.code==='KeyQ')useSkill('s1');else if(e.code==='KeyZ')useSkill('s2');else if(e.code==='KeyX')useSkill('s3');
   else if(e.code==='KeyC'){if(P.sprint&&P.onGround&&P.slideT<=0)startSlide();else P.crouchOn=!P.crouchOn}
   else if(e.code==='KeyE')tapInteract()});
-addEventListener('keyup',e=>{keys[e.code]=false});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyG'&&P&&P.charging)releaseThrow();if(e.code==='Tab'&&M.running&&M.mode!=='extract')UI.scoreboard(false)});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=false});
-canvas.addEventListener('mousedown',e=>{if(!M.running||M.paused||UI.invOpen)return;if(!locked&&!fallbackLook){lockPointer();return}
-  if(e.button===0){mouse.l=true;mouse.lPressed=true}if(e.button===2&&P&&P.alive)toggleADS()});
-addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false});
+canvas.addEventListener('mousedown',e=>{if(!M.running||M.paused||UI.invOpen)return;if(!locked&&!fallbackLook&&!isTouch){lockPointer(true);return}
+  if(e.button===0){mouse.l=true;mouse.lPressed=true}if(e.button===2&&P&&P.alive){if(PF.settings.adsMode==='hold'){P.ads=true;P.zoomStage=1}else toggleADS()}});
+addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2&&P&&PF.settings.adsMode==='hold')P.ads=false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(!M.running||M.paused||UI.invOpen||(!locked&&!fallbackLook))return;lookDX+=clamp(e.movementX||0,-250,250);lookDY+=clamp(e.movementY||0,-250,250)});
 canvas.addEventListener('wheel',e=>{if(M.running&&P&&P.alive)switchTo(nextSlot(e.deltaY>0?1:-1))},{passive:true});
-document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;if(locked){everLocked=true;if(M.paused)resumeGame()}else if(M.running&&!M.paused&&!fallbackLook&&!UI.invOpen&&!UI.mapOpen&&!UI.respawnOpen)pauseGame()});
-function lockFailed(){if(!everLocked){fallbackLook=true;if(M.paused)resumeGame()}}
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;if(locked){everLocked=true;if(M.paused)resumeGame()}else if(M.running&&!M.paused&&!fallbackLook&&!UI.invOpen&&!UI.mapOpen&&!UI.respawnOpen&&!UI.chatting&&!UI.killcamOn&&!M.ending)pauseGame()});
+let lockGesture=false;
+function lockFailed(){if(!everLocked&&lockGesture){fallbackLook=true;if(M.paused)resumeGame()}else if(M.running&&!fallbackLook&&!UI.invOpen&&!UI.mapOpen&&!UI.respawnOpen&&!UI.chatting)UI.needClick()}
 document.addEventListener('pointerlockerror',lockFailed);
-function lockPointer(){if(isTouch||fallbackLook)return;try{const p=canvas.requestPointerLock();if(p&&p.catch)p.catch(lockFailed)}catch(e){lockFailed()}}
+function lockPointer(g){if(isTouch||fallbackLook)return;lockGesture=!!g||!!(navigator.userActivation&&navigator.userActivation.isActive);try{const p=canvas.requestPointerLock();if(p&&p.catch)p.catch(lockFailed)}catch(e){lockFailed()}}
 function unlockPointer(){if(document.pointerLockElement)document.exitPointerLock()}
 
 /* ================= actions ================= */
 function nextSlot(dir){let i=P.cur;for(let k=0;k<4;k++){i=(i+dir+4)%4;if(P.slots[i])return i}return P.cur}
 function switchTo(i){if(!P.slots[i]||i===P.cur||!P.alive||P.downed)return;P.prev=P.cur;P.cur=i;P.reloadT=0;P.switchT=.42;P.ads=false;mouse.lPressed=false;blip(600,.04,'square',.03);blip(450,.05,'square',.03,0,.2)}
-function toggleADS(){const s=P.slots[P.cur];if(!s||s.knife)return;P.ads=!P.ads}
+function toggleADS(){const s=P.slots[P.cur];if(!s||s.knife)return;if(!P.ads){P.ads=true;P.zoomStage=1}else if(s.st.scope&&P.zoomStage===1){P.zoomStage=2;blip(900,.03,'square',.03)}else P.ads=false}
 function toggleTorch(){P.torchOn=!P.torchOn;blip(1300,.03,'square',.03)}
 function curW(){return P.slots[P.cur]}
 function startReload(){const s=curW();if(!s||s.knife||P.reloadT>0||P.switchT>0||s.mag>=s.st.mag||P.ammo[s.def.ammo]<=0||P.healT>0)return;P.reloadT=s.st.reload*(P.buff.speedT>0?.7:1);P.reloadDur=P.reloadT;blip(420,.05,'square',.04);blip(300,.05,'square',.04,0,.5)}
 function startHeal(){if(P.healT>0||P.hp>=100||!P.alive||P.downed)return;const id=invCount('surg')&&P.hp<50?'surg':invCount('med')?'med':invCount('surg')?'surg':null;if(!id){note('沒有醫療物品');return}
   invTake(id);P.healItem=id;P.healT=ITEMS[id].time;P.healAmt=ITEMS[id].heal;P.reloadT=0;P.ads=false;blip(700,.08,'sine',.05)}
 function startRepair(){if(P.repairT>0||!P.alive)return;if(P.armor.tier===0){note('沒有穿護甲');return}if(P.armor.dur>=P.armor.max){note('護甲耐久已滿');return}if(!invTake('repair')){note('沒有護甲維修包');return}P.repairT=ITEMS.repair.time;P.ads=false;blip(500,.08,'sine',.05)}
-function throwNade(){if(P.nadeCd>0||P.reloadT>0||!P.alive||P.downed)return;if(!invTake('nade')){note('沒有手榴彈');return}P.nadeCd=.9;P.switchT=Math.max(P.switchT,.35);throwProjectile('frag',17,{fuse:2.3});blip(500,.06,'triangle',.05,-200)}
+function throwNade(){startCharge();releaseThrow(.7)}
+function startCharge(){if(P.nadeCd>0||P.reloadT>0||!P.alive||P.downed||P.charging)return;if(!invCount('nade')){note('沒有手榴彈');return}P.charging=true;P.charge=0;blip(300,.05,'triangle',.03)}
+function releaseThrow(force){if(!P.charging)return;P.charging=false;const c=force!==undefined?force:P.charge;if(!invTake('nade'))return;P.nadeCd=.9;P.switchT=Math.max(P.switchT,.35);
+  throwProjectile('frag',7+15*c+(P.sprint?3:0),{fuse:2.3});blip(500,.06,'triangle',.05,-200)}
 function quickMelee(){if(P.meleeT>0||!P.alive||P.downed)return;P.meleeT=KNIFE.rate;P.meleeAnim=0;P.ads=false;doMelee()}
 function startSlide(){P.slideT=.8;P.slideDir.set(P.vel.x,0,P.vel.z).normalize();P.crouchOn=true;noiseHit(.5,700,.12);P.shake=Math.max(P.shake,.15)}
 
@@ -146,20 +154,21 @@ function currentSpread(){const s=curW();if(!s||s.knife)return .03;const st=s.st;
 function playerShoot(){
   const s=curW(),st=s.st,d=s.def;
   if(s.mag<=0){blip(300,.04,'square',.04);P.fireT=.25;mouse.lPressed=false;if(P.ammo[d.ammo]>0)startReload();return}
-  s.mag--;P.fireT=60/st.rpm;mouse.lPressed=false;camera.updateMatrixWorld();
+  s.mag--;if(MUT('infammo'))P.ammo[d.ammo]=P.ammoCap[d.ammo];P.fireT=60/st.rpm;mouse.lPressed=false;camera.updateMatrixWorld();
   const sp=currentSpread();camFwd(_f);_r.set(1,0,0).applyQuaternion(camera.quaternion);_u.set(0,1,0).applyQuaternion(camera.quaternion);
   const muz=muzzleWorld(new T.Vector3());const pel=d.pel||1;const dmgMul=P.buff.scanT>0?1.2:1;
   for(let q=0;q<pel;q++){const a=Math.random()*TAU,r=Math.sqrt(Math.random())*sp;const dir=_dir.copy(_f).addScaledVector(_r,Math.cos(a)*r).addScaledVector(_u,Math.sin(a)*r).normalize();
     const range=d.range;let wt=range;const wh=rayWorld(camera.position,dir,range);if(wh)wt=RH.t;const box=wh?RH.box:null,n={x:RH.nx,y:RH.ny,z:RH.nz};
-    const ah=rayActors(camera.position,dir,wt,P.team);
+    const ah=rayActors(camera.position,dir,wt,M.ff?null:P.team);
     const end=camera.position.clone().addScaledVector(dir,ah?ah.t:wt);
     if(ah){let dmg=st.dmg*dmgMul;const dist=ah.t;if(pel>1)dmg*=clamp(1-(dist-8)/32,.2,1);else if(dist>45&&!st.scope)dmg*=Math.max(.6,1-(dist-45)/140);
       if(ah.part==='head')dmg*=ah.isBot&&ah.ent.kind!=='grunt'&&ah.ent.kind!=='soldier'?Math.max(1.6,d.head*.7):d.head;else if(ah.part==='limb')dmg*=.72;
       emit(end,ah.part==='head'?10:6,'blood',ah.part==='head'?4:3,.5,.05,9.8,{x:dir.x*.6,y:dir.y*.6,z:dir.z*.6},1);
+      if(ah.isBot&&!ah.ent.dead)P.dmgDealt+=Math.min(dmg,ah.ent.hp);
       if(ah.isBot)damageBot(ah.ent,dmg,ah.part,{player:true,pos:P.pos,wid:s.wid},dir);else if(typeof netHitPlayer==='function')netHitPlayer(ah.ent,dmg,ah.part);
       if(!ah.isBot||!ah.ent.dead)hitmark(ah.part==='head'?'head':'body')}
     else if(wh){emit(end,pel>1?2:5,'spark',5,.25,.03,6,n,.8);emit(end,pel>1?1:3,'dust',2,.5,.06,3,n,.6);decal(end,n.x,n.y,n.z);
-      if(box){if(box.barrel)hitBarrel(box,st.dmg);if(box.turret||box.cam||box.shield)damageDevice(box,st.dmg);if(box.door&&!box.door.locked&&st.dmg>60&&false)toggleDoor(box.door)}}
+      if(box){if(box.barrel)hitBarrel(box,st.dmg);if(box.turret||box.cam||box.shield||box.board)damageDevice(box,st.dmg);if(box.door&&!box.door.locked&&st.dmg>60&&false)toggleDoor(box.door)}}
     tracer(muz,end,0xffe2a0,st.scope?.03:.018)}
   const rk=st.recoil*(1-P.adsK*.4)*(1-P.crouch*.25);P.pitch+=rk*.65;P.recoilDebt+=rk*.65;P.kick+=rk*.5;P.yaw+=rnd(-.5,.5)*rk*.55;
   P.bloom=Math.min(P.bloom+(d.auto?.007:.012),.06);P.vmKick=pel>1||d.bolt?1.7:1;P.flashT=.045;if(s.vm.fl)s.vm.fl.material.rotation=Math.random()*TAU;
@@ -172,10 +181,10 @@ function playerShoot(){
   alertNoise(P.pos,st.noise,P.pos);
   if(M.net)P.fireSeq=(P.fireSeq||0)+1;
 }
-function doMelee(){camera.updateMatrixWorld();camFwd(_f);const ah=rayActors(camera.position,_f,KNIFE.range,P.team);noiseHit(.15,3000,.12,0,1500);
-  if(ah){let dmg=KNIFE.dmg;if(ah.isBot){const b=ah.ent;const back=Math.cos(angDiff(Math.atan2(P.pos.x-b.pos.x,P.pos.z-b.pos.z),b.yaw))<-.3;if(back)dmg*=KNIFE.back;damageBot(b,dmg,'body',{player:true,pos:P.pos,how:back?'背刺':'刀殺'},_f);if(!b.dead)hitmark('body')}
+function doMelee(){camera.updateMatrixWorld();camFwd(_f);const ah=rayActors(camera.position,_f,KNIFE.range,M.ff?null:P.team);noiseHit(.15,3000,.12,0,1500);
+  if(ah){let dmg=ah.t<1.7?220:KNIFE.dmg;if(M.mode==='gungame'||M.mode==='oitc')dmg=999;if(ah.isBot){const b=ah.ent;const back=Math.cos(angDiff(Math.atan2(P.pos.x-b.pos.x,P.pos.z-b.pos.z),b.yaw))<-.3;if(back)dmg*=KNIFE.back;damageBot(b,dmg,'body',{player:true,pos:P.pos,how:back?'背刺':'刀殺'},_f);if(!b.dead)hitmark('body')}
     else if(typeof netHitPlayer==='function')netHitPlayer(ah.ent,dmg,'body');emit(camera.position.clone().addScaledVector(_f,ah.t),8,'blood',3,.4,.05);blip(180,.08,'sawtooth',.06)}
-  else if(rayWorld(camera.position,_f,KNIFE.range)){emit(camera.position.clone().addScaledVector(_f,RH.t),5,'spark',3,.2,.03);blip(2200,.03,'square',.03)}}
+  else if(rayWorld(camera.position,_f,KNIFE.range)){emit(camera.position.clone().addScaledVector(_f,RH.t),5,'spark',3,.2,.03);blip(2200,.03,'square',.03);if(RH.box&&RH.box.board){RH.box.board.hp-=40;if(RH.box.board.hp<=0)breakBoard(RH.box)}}}
 
 /* ================= projectiles / skills ================= */
 const projs=[];const projGeo=new T.SphereGeometry(.075,10,8);
@@ -244,12 +253,13 @@ function damagePlayer(dmg,src,info={}){
   if(pr.tier>0&&pr.dur>0&&!info.explosion){const prot=TIER_PROT[pr.tier];const ab=dmg*prot;pr.dur=Math.max(0,pr.dur-dmg*.55);dmg-=ab}
   else if(info.explosion&&P.armor.tier>0&&P.armor.dur>0){dmg*=1-TIER_PROT[P.armor.tier]*.5;P.armor.dur=Math.max(0,P.armor.dur-dmg*.4)}
   if(info.head&&P.helmet.tier===0)dmg*=1.6;
+  if(MUT('hardcore')&&!info.fall&&!info.gas)dmg*=1.5;if(M.countdown>0)return;P.lastHit={src:info.bot||null,by:info.by||null,pos:src?src.clone?src.clone():new T.Vector3(src.x,src.y||0,src.z):null};
   P.hp-=dmg;P.dmgFlash=Math.min(1,P.dmgFlash+.45);P.shake=Math.max(P.shake,.5);P.kick+=rnd(-.01,.02);P.yaw+=rnd(-.012,.012);
   if(src)dmgDir(src);hurtSnd();P.healT=0;P.repairT=0;
   if(P.hp<=0){P.hp=0;playerDown(info)}}
 function playerDown(info){
   const teammates=M.net&&Object.values(netPuppets).some(p=>p.alive&&!p.downed&&p.team===P.team);
-  if(M.mode==='extract'&&teammates&&!P.downed){P.downed=true;P.bleed=40;P.ads=false;banner('你倒地了','等待隊友救援',2.5);return}
+  if((M.mode==='extract'||M.mode==='zombie')&&teammates&&!P.downed){P.downed=true;P.bleed=40;P.ads=false;banner('你倒地了','等待隊友救援',2.5);return}
   playerDie(info)}
 function playerDie(info){P.alive=false;P.downed=false;P.ads=false;banner('陣亡','',2);boomSnd(.3);onPlayerDied(info)}
 function revivePlayer(){if(!P.downed)return;P.downed=false;P.hp=30;banner('已被救起','',1.5)}
