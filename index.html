@@ -79,6 +79,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--exfil);outline-
 @keyframes hackflick{0%{opacity:.75}50%{opacity:1}}
 .lapSheet{max-width:520px;background:#0b120d;border-color:#2a6a3a}.lapSheet h1{color:#40ff80;font-family:var(--f-num)}#lapBody{display:grid;gap:6px;min-width:min(440px,86vw)}.lapT{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 12px;background:#102a18;border:1px solid #2a6a3a;color:#c8ffd8;font:inherit;cursor:pointer;text-align:left}.lapT:hover{background:#174024}.lapT small{color:#7fd09a;font-family:var(--f-num)}.lapBar{height:10px;background:#102a18;border:1px solid #2a6a3a}.lapBar i{display:block;height:100%;background:#40ff80}
 .liveBox{display:grid;gap:3px;padding:10px 14px;margin-bottom:10px;border:1px solid #ff6b3d;background:linear-gradient(90deg,rgba(255,107,61,.18),rgba(255,107,61,.04))}.liveBox .tg{font-size:12px;color:#ff9a6b;font-family:var(--f-num)}.liveBox b{font-size:17px}.liveBox small{color:var(--mute)}.liveBox .next{opacity:.75}
+#vxh{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px;border:2px solid rgba(255,90,60,.85);border-radius:50%;pointer-events:none;box-shadow:0 0 4px #000}#vxh.ready{border-color:#7fffa0}#vxh i{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;background:#fff;border-radius:50%}#vxh b{position:absolute;left:-14px;right:-14px;top:50%;height:1px;background:linear-gradient(90deg,#fff 0 10px,transparent 10px calc(100% - 10px),#fff calc(100% - 10px))}
+#vnose{position:absolute;width:14px;height:14px;margin:-7px;border:2px solid #ffd27a;transform:rotate(45deg);pointer-events:none}#vinfo{position:absolute;left:50%;top:calc(50% + 34px);transform:translateX(-50%);font:600 12px var(--f-num),monospace;color:#efe7d6;text-shadow:0 1px 2px #000;white-space:nowrap;pointer-events:none}
 #todTag{margin-top:4px;font:600 13px var(--f-num),monospace;color:#ffd58a;letter-spacing:.04em}
 .keyBinds{display:grid;grid-template-columns:1fr;gap:4px}.keyBinds h4{margin:10px 0 2px;font-size:13px;color:var(--amber)}.kbRow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:3px 0;border-bottom:1px solid rgba(239,231,214,.07);font-size:14px}.kb{min-width:110px;padding:6px 10px;background:var(--panel2);border:1px solid var(--line);color:var(--text);font:600 14px var(--f-num),monospace;cursor:pointer}.kb:hover{border-color:var(--amber)}.kb.changed{color:var(--amber)}.kb.wait{border-color:var(--amber);color:var(--amber);animation:hackflick .6s steps(2) infinite}
 .teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.teamCard{display:grid;gap:6px;align-content:start;padding:10px;border:1px solid var(--line);border-top:3px solid var(--tc);background:var(--panel2)}.teamCard.mine{box-shadow:inset 0 0 0 1px var(--tc);background:color-mix(in srgb,var(--tc) 10%,var(--panel2))}
@@ -278,7 +280,7 @@ details.adv{border:1px solid var(--line);padding:8px 12px;background:rgba(239,23
   <div id="hud" hidden>
     <div id="scope" hidden><i></i></div><div id="cantDot" hidden><i></i></div><div id="blind"></div>
     <canvas id="compass" width="1120" height="88"></canvas>
-    <div id="raidInfo"><div class="k" id="timerLbl">撤離倒數</div><div id="timer">20:00</div><div class="k" id="carryLbl">攜帶價值</div><div id="carry">$0</div><div id="kills">擊殺 0 · 爆頭 0</div><div id="todTag"></div></div><div id="jetHud" hidden></div>
+    <div id="raidInfo"><div class="k" id="timerLbl">撤離倒數</div><div id="timer">20:00</div><div class="k" id="carryLbl">攜帶價值</div><div id="carry">$0</div><div id="kills">擊殺 0 · 爆頭 0</div><div id="todTag"></div></div><div id="jetHud" hidden></div><div id="vxh" hidden><i></i><b></b></div><div id="vnose" hidden></div><div id="vinfo" hidden></div>
     <div id="cqBar" hidden><div class="tkb"><span class="tk" id="tk1" style="color:var(--ally)">0</span><span class="k" id="cqL1"></span></div><div id="flagChips" style="display:flex;gap:4px"></div><div class="tkb"><span class="tk" id="tk2" style="color:var(--danger)">0</span><span class="k" id="cqL2"></span></div></div>
     <div id="countdown" hidden></div><div id="fps" hidden></div>
     <div id="chat" hidden><div id="chatLines"></div><input id="chatInput" type="text" maxlength="80" placeholder="輸入訊息，Enter 送出" hidden></div>
@@ -638,6 +640,9 @@ const MAPS={
   forest:{name:'叢林',half:175,desc:'濕熱雨林、伐木營地、獵人小屋、護林塔滑索、岩洞寶藏，常下雨起霧。',size:'10 × 10 km · 核心區 350 m'},
   desert:{name:'赤沙綠洲',half:185,desc:'綠洲、土磚村與市集、沙海神殿、輸油管線、殘骸車隊與峽谷。',size:'10 × 10 km · 核心區 370 m'},
   tower:{name:'台北101',half:160,desc:'信義區的地標大樓：購物中心、搭電梯上觀景台、兩條滑索、捷運站、高架快速道路。',size:'10 × 10 km · 核心區 320 m'},
+  isles:{sea:true,name:'碧波群島',half:215,desc:'水上地圖：9 座島嶼散布海上，要塞、漁村、雷達站、度假村。島與島之間要開船或游泳。',size:'10 × 10 km · 核心區 430 m · 水上'},
+  rig:{sea:true,name:'鋼鐵鑽油島',half:200,desc:'水上地圖：人工島與高架鑽油平台，棧橋相連；中央鑽油塔甲板上有金庫。',size:'10 × 10 km · 核心區 400 m · 水上'},
+  navy:{sea:true,name:'怒潮軍港',half:220,desc:'水上地圖：西側是海軍基地（司令部、潛艇洞庫、乾船塢），東側海灣有防波堤砲台與燈塔，碼頭停著驅逐艦。',size:'10 × 10 km · 核心區 440 m · 水上'},
   warehouse:{hidden:true,name:'沙暴倉庫',half:62,desc:'近距離巷戰：大倉庫、天橋、跳板。適合對決與團戰。',size:'10 × 10 km · 核心區 124 m'},
 };
 const MODES={
@@ -771,6 +776,12 @@ const THEMES={
     sky:{day:0xd8c49a,dusk:0xd0885a,night:0x0e0c14},mtn:0xb89060,water:0x3a7a7a},
   tower:{ground:'#5e5e5a',road:'#3a3a3a',wallA:'#a0a09a',wallB:'#8a8e92',wallC:'#b0aca2',dark:'#4a4c50',roof:'#44464a',wood:'#6d5134',sand:'#8a8270',rock:'#6a6a66',metal:'#4a5058',floor:'#606264',
     sky:{day:0xa8b8c8,dusk:0xc08868,night:0x080a14},mtn:0x6a7280},
+  isles:{ground:'#8a8a5a',road:'#7a6e56',wallA:'#d8d0bf',wallB:'#c8b89a',wallC:'#e0d6c0',dark:'#5e5a50',roof:'#7a4a32',wood:'#806038',sand:'#d8c89a',rock:'#7a7464',metal:'#4a5058',floor:'#8a7e68',
+    sky:{day:0x9cc4dc,dusk:0xc88a62,night:0x08101c},mtn:0x6a7a52,water:0x1e6a80},
+  rig:{ground:'#6a6a64',road:'#3e3e3e',wallA:'#9aa0a4',wallB:'#7e868c',wallC:'#a8a49a',dark:'#44484c',roof:'#3e4246',wood:'#6d5134',sand:'#8a8270',rock:'#5a5c5e',metal:'#4a525a',floor:'#5a5e62',
+    sky:{day:0x98aab6,dusk:0xb07a62,night:0x080c16},mtn:0x5a6470,water:0x1a4a5e},
+  navy:{ground:'#646a5a',road:'#3e3e3c',wallA:'#9a9a92',wallB:'#7e8288',wallC:'#a8a49a',dark:'#4a4c4e',roof:'#424446',wood:'#6d5134',sand:'#8a8270',rock:'#5e605a',metal:'#3e4650',floor:'#5e6062',
+    sky:{day:0xa0b2bc,dusk:0xb07a62,night:0x080c14},mtn:0x5e6a58,water:0x1c4458},
   warehouse:{ground:'#a08a64',road:'#5a5244',wallA:'#b0a184',wallB:'#9c8f78',wallC:'#b8a88a',dark:'#6a6052',roof:'#5c564c',wood:'#806038',sand:'#9a8a60',rock:'#8a7a62',metal:'#4a4a46',floor:'#7a6e5c',
     sky:{day:0xc9ad84,dusk:0xc0805a,night:0x0d0f18},mtn:0xa0886a},
 };
@@ -847,9 +858,9 @@ function moveCircle(p,dx,dz,r,feet,head){
     p.z+=dz;q=gridQuery(p.x-r-.1,p.z-r-.1,p.x+r+.1,p.z+r+.1);for(const b of q)if(blocks(b,p.x,p.z,r,feet,head)){if(dz>0)p.z=b.minZ-r-.001;else if(dz<0)p.z=b.maxZ+r+.001}
   }
   p.x=clamp(p.x,-H,H);p.z=clamp(p.z,-H,H)}
-function groundAt(x,z,r,feet){let g=W&&W.water&&waterAt(x,z)?-60:terrH(x,z);const q=gridQuery(x-r,z-r,x+r,z+r);for(const b of q){if(!b.off&&b.solid&&b.maxY<=feet+.45&&b.maxY>g&&x+r>b.minX&&x-r<b.maxX&&z+r>b.minZ&&z-r<b.maxZ)g=b.maxY}return g}
+function groundAt(x,z,r,feet){const ww=W&&W.water&&waterAt(x,z);let g=ww?(ww.sea?ww.bed:-60):terrH(x,z);const q=gridQuery(x-r,z-r,x+r,z+r);for(const b of q){if(!b.off&&b.solid&&b.maxY<=feet+.45&&b.maxY>g&&x+r>b.minX&&x-r<b.maxX&&z+r>b.minZ&&z-r<b.maxZ)g=b.maxY}return g}
 function ceilingHit(x,z,r,feet,head){const q=gridQuery(x-r,z-r,x+r,z+r);for(const b of q)if(!b.off&&b.solid&&b.minY>feet+.45&&b.minY<head&&x+r>b.minX&&x-r<b.maxX&&z+r>b.minZ&&z-r<b.maxZ)return true;return false}
-function isFree(x,z,r,y){if(y===undefined)y=terrH(x,z);const WH=W.world||W.half;if(Math.abs(x)>WH-3||Math.abs(z)>WH-3)return false;if(y>-1&&W.water&&waterAt(x,z))return false;const q=gridQuery(x-r,z-r,x+r,z+r);for(const b of q)if(!b.off&&b.solid&&b.minY<y+1.9&&b.maxY>y+.05&&x+r>b.minX&&x-r<b.maxX&&z+r>b.minZ&&z-r<b.maxZ)return false;return true}
+function isFree(x,z,r,y){const yu=y===undefined;if(yu)y=terrH(x,z);const WH=W.world||W.half;if(Math.abs(x)>WH-3||Math.abs(z)>WH-3)return false;if((y>-1||yu&&W.sea)&&W.water&&waterAt(x,z))return false;const q=gridQuery(x-r,z-r,x+r,z+r);for(const b of q)if(!b.off&&b.solid&&b.minY<y+1.9&&b.maxY>y+.05&&x+r>b.minX&&x-r<b.maxX&&z+r>b.minZ&&z-r<b.maxZ)return false;return true}
 
 /* ================= raycasting ================= */
 const _o=[0,0,0],_d=[0,0,0];
@@ -1000,7 +1011,7 @@ addEventListener('keydown',e=>{if(typeof Hub==='undefined'||!Hub.binding)return;
    - 樹木不會整平地形，而是被「抬」到地面高度。
    - 地圖生成後才放的方塊（旗桿、床、砲塔、空投箱…）若底部在 y=0 而該處有坡，會局部整平並重建地形網格。
    - groundAt / isFree / rayWorld / 粒子 / 投擲物 / 導航 都會讀 terrH()。 */
-const TERR_AMP={town:6,harbor:5,frost:15,dam:12,valley:17,space:6,prison:6,nuclear:8,forest:13,desert:11,tower:5,warehouse:0};
+const TERR_AMP={town:6,harbor:5,frost:15,dam:12,valley:17,space:6,prison:6,nuclear:8,forest:13,desert:11,tower:5,warehouse:0,isles:9,rig:4,navy:7};
 let TR=null;// {res,n,o,h,max,built,mesh}
 
 function _thash(a,b,s){let t=(Math.imul(a,374761393)+Math.imul(b,668265263)+Math.imul(s,1442695041))|0;t=Math.imul(t^(t>>>13),1274126177);return((t^(t>>>16))>>>0)/4294967295}
@@ -1036,7 +1047,7 @@ function terrBuild(){TR=null;const amp=TERR_AMP[W.id];if(!amp)return;const h=W.h
   // 3) 動態物件、道路、水域、地標、撤離點、跳板、毒氣區、出生點
   for(const m of W.dynObjs||[])if(m.position)circ(m.position.x,m.position.z,3);
   for(const r of W.roadRects||[])rect(...r);for(const r of W.flatRects||[])rect(...r);
-  for(const w of W.water||[])rect(w.minX-4,w.minZ-4,w.maxX+4,w.maxZ+4);
+  if(!W.sea)for(const w of W.water||[])rect(w.minX-4,w.minZ-4,w.maxX+4,w.maxZ+4);
   for(const l of W.landmarks||[])circ(l.x,l.z,l.r*.55);
   for(const e of W.extracts||[])circ(e.pos.x,e.pos.z,9);
   for(const p of W.pads||[])circ(p.x,p.z,3);for(const g of W.gas||[])circ(g.x,g.z,g.r);
@@ -1051,7 +1062,7 @@ function terrBuild(){TR=null;const amp=TERR_AMP[W.id];if(!amp)return;const h=W.h
     const big=fbm(wx/95,wz/95,s),small=fbm(wx/32,wz/32,s+51,3);
     let raw=dune?(1-Math.abs(fbm(wx/70,wz/45,s)*2-1))**2.2*.9+small*.25:sstep(.3,.72,big)*.85+small*.35;
     let f=sstep(3,15,D[i]);const out=Math.max(Math.abs(wx),Math.abs(wz))-h;if(out>0&&!FAR){f=Math.max(f,sstep(0,45,out));raw+=out*.012}
-    let v=raw*amp*f;if(out>0&&FAR)v=lerp(v,farH(wx,wz),sstep(10,120,out));Hh[i]=v;if(v>mx)mx=v}
+    let v=raw*amp*f;if(W.sea)v=seaH(islandM(wx,wz),v);if(out>0&&FAR)v=lerp(v,farH(wx,wz),sstep(10,120,out));Hh[i]=v;if(v>mx)mx=v}
   if(FAR)mx=Math.max(mx,FAR.max);TR={res,n,o,h:Hh,max:mx,amp,built:false,mesh:null,D};
   liftTrees();TR.built=true}
 
@@ -1097,7 +1108,7 @@ function farRaw(x,z,s,dune){const big=fbm(x/95,z/95,s,3);let r=dune?(1-Math.abs(
   return r}
 function farBuild(){FAR=null;if(W.world<=W.half)return;const amp=Math.max(8,TERR_AMP[W.id]||0),E=WORLD_HALF+200,res=FAR_RES,n=Math.ceil(E*2/res)+1,o=-E;
   const s=(W.seed||1)%100000,dune=W.id==='desert',H=new Float32Array(n*n);
-  for(let z=0;z<n;z++)for(let x=0;x<n;x++){const wx=o+x*res,wz=o+z*res;let v=farRaw(wx,wz,s,dune)*amp;const out=Math.max(Math.abs(wx),Math.abs(wz))-WORLD_HALF;if(out>0)v+=out*.3;H[z*n+x]=v}
+  for(let z=0;z<n;z++)for(let x=0;x<n;x++){const wx=o+x*res,wz=o+z*res;let v=farRaw(wx,wz,s,dune)*amp;if(W.sea)v=seaH(islandM(wx,wz),v*.6);const out=Math.max(Math.abs(wx),Math.abs(wz))-WORLD_HALF;if(out>0)v+=out*.3;H[z*n+x]=v}
   // 據點、機場整平
   for(const f of W.flatCircles||[]){const R=f.r+95;const x0=clamp(Math.floor((f.x-R-o)/res),0,n-1),x1=clamp(Math.ceil((f.x+R-o)/res),0,n-1),z0=clamp(Math.floor((f.z-R-o)/res),0,n-1),z1=clamp(Math.ceil((f.z+R-o)/res),0,n-1);
     for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){const d=Math.hypot(o+x*res-f.x,o+z*res-f.z);H[z*n+x]*=sstep(f.r,f.r+90,d)}}
@@ -1116,6 +1127,8 @@ function planSatellites(){W.sats=[];W.flatCircles=[];if(W.world<=W.half)return;c
     const type=SAT_TYPES[W.sats.length%SAT_TYPES.length];const r=type==='village'?55:type==='depot'?45:35;
     const km=(Math.hypot(x,z)/1000).toFixed(1);W.sats.push({x,z,r,type,name:`${dirName(x,z)}${SAT_NAME[type]}（${km} km）`})}
   for(const s of W.sats)W.flatCircles.push({x:s.x,z:s.z,r:s.r});
+  if(W.sea){for(const s of W.sats)W.islands.push({x:s.x,z:s.z,r:s.r+70});for(let i=0;i<30;i++){const x=(R()*2-1)*(WORLD_HALF-200),z=(R()*2-1)*(WORLD_HALF-200);if(Math.max(Math.abs(x),Math.abs(z))<W.half+300)continue;W.islands.push({x,z,r:40+R()*110})}
+    if(W.mode==='conquest')for(const sx of [-1,1])W.islands.push({x:sx*(W.half+260),z:0,r:170})}
   if(W.mode==='conquest')for(const sx of [-1,1])W.flatCircles.push({x:sx*(W.half+260),z:0,r:110});// 雙方機場
 }
 function buildSatellites(){if(!W.sats||!W.sats.length)return;
@@ -1166,7 +1179,7 @@ function updateFarTerrain(){if(farMesh&&P)farMeshUpdate(P.car?P.car.pos.x:P.pos.
 let worldBase=null;
 function buildWorldBase(){worldBase=null;if(!FAR)return;const N=256,c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d'),im=g.createImageData(N,N),st=WORLD_HALF*2/N,b0=THEME.snowy?[42,47,51]:[27,29,25];
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-WORLD_HALF+(i+.5)*st,z=-WORLD_HALF+(j+.5)*st,y=farH(x,z);const sh=clamp((farH(x-st,z-st)-farH(x+st,z+st))*.05,-.5,.5),el=clamp(y/(FAR.amp*2.5),0,1.4)*18;
-    const k=(j*N+i)*4,v=sh*45+el;im.data[k]=clamp(b0[0]+v,0,255);im.data[k+1]=clamp(b0[1]+v,0,255);im.data[k+2]=clamp(b0[2]+v*.85,0,255);im.data[k+3]=255}
+    const k=(j*N+i)*4,v=sh*45+el;if(y<-.4){const dd=clamp(-y/16,0,1);im.data[k]=24-dd*10;im.data[k+1]=62-dd*24;im.data[k+2]=82-dd*24;im.data[k+3]=255;continue}im.data[k]=clamp(b0[0]+v,0,255);im.data[k+1]=clamp(b0[1]+v,0,255);im.data[k+2]=clamp(b0[2]+v*.85,0,255);im.data[k+3]=255}
   g.putImageData(im,0,0);worldBase=c}
 
 </script>
@@ -1179,7 +1192,7 @@ function newWorld(mapId,seed,mode){
   W={id:mapId,seed,mode,half:MAPS[mapId].half,boxes:[],meshes:[],containers:[],doors:[],cameras:[],turrets:[],mines:[],switches:[],ladders:[],extracts:[],flags:[],
     roofSpots:[],spawnsP:[],enemySpots:[],bossSpot:null,bases:{1:null,2:null},smokes:[],shields:[],lampPos:[],glows:[],power:false,clampExtra:null,bodies:[],nav:null,stripCount:0,
     ziplines:[],pads:[],breakables:[],elevators:[],gas:[],ammoSt:[],pickups:[],navBlock:null,relicPos:{x:0,z:0},holdPos:{x:0,z:0},duelSpots:null};
-  W.world=isBigWorld(mode)?WORLD_HALF:W.half;gridInit(W.world);
+  W.world=isBigWorld(mode)?WORLD_HALF:W.half;gridInit(W.world);if(MAPS[mapId].sea){W.sea=true;W.water=[];W.islands=[]}
   const h=W.half,big=W.world>W.half;camera.far=big?2400:700;camera.updateProjectionMatrix();
   // ground
   const gt=MAT.ground.map;gt.repeat.set(h/3.5,h/3.5);
@@ -1190,7 +1203,7 @@ function newWorld(mapId,seed,mode){
   if(!big)for(const s of [-1,1]){sbox(0,s*h,h*2+2,1.4,6,wm,0,{uv:3});sbox(s*h,0,1.4,h*2,6,wm,0,{uv:3})}
   // strips instanced (loot crate lights)
   W.stripMesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),new T.MeshBasicMaterial({color:0xffffff}),600);for(let i=0;i<600;i++){W.stripMesh.setColorAt(i,new T.Color(0xffffff));_m4.makeScale(0,0,0);W.stripMesh.setMatrixAt(i,_m4)}W.stripMesh.count=0;scene.add(W.stripMesh);W.meshes.push(W.stripMesh);
-  ({town:genTown,harbor:genHarbor,frost:genFrost,dam:genDam,warehouse:genWarehouse,valley:genValley,space:genSpace,prison:genPrison,nuclear:genNuclear,forest:genForest,desert:genDesert,tower:genTower})[mapId]();
+  ({town:genTown,harbor:genHarbor,frost:genFrost,dam:genDam,warehouse:genWarehouse,valley:genValley,space:genSpace,prison:genPrison,nuclear:genNuclear,forest:genForest,desert:genDesert,tower:genTower,isles:genIsles,rig:genRig,navy:genNavy})[mapId]();if(W.sea)seaSetup();
   addOldLandmarks(mapId);if(h>100&&(mode==='extract'||mode==='conquest'))setupGarages();planSatellites();farBuild();buildSatellites();if(mode!=='hub')setupHackSpots();terrBuild();if(mode==='extract')setupBuried();if(TR)terrMesh();else groundPlanes(h);farMeshInit();farMeshUpdate(0,0,true);buildWorldBase();
   if(W.water){const nb=W.navBlock;W.navBlock=(x,z)=>(nb&&nb(x,z))||!!waterAt(x,z)}
   decoEnd();
@@ -1952,7 +1965,7 @@ function updateBot(b,dt){
   // doors: open closed unlocked doors nearby when moving
   if(spd>0&&W.doors.length&&(b.id+(M.frame|0))%10===0){for(const d of W.doors){if(!d.open&&!d.locked&&Math.abs(d.x-P0.x)<1.8&&Math.abs(d.z-P0.z)<1.8&&Math.abs(d.y-P0.y)<1)toggleDoor(d,true)}}
   if(b.detour>0){b.detour-=dt;mx=b.dvx;mz=b.dvz;spd=Math.max(spd,2)}
-  spd*=stMul(b.st);if(spd>0){const ox=P0.x,oz=P0.z;moveCircle(P0,mx*spd*dt,mz*spd*dt,.36,P0.y,P0.y+1.8);if(W.clampExtra)W.clampExtra(P0);const moved=Math.hypot(P0.x-ox,P0.z-oz);
+  spd*=stMul(b.st);if(spd>0){const ox=P0.x,oz=P0.z;moveCircle(P0,mx*spd*dt,mz*spd*dt,.36,P0.y,P0.y+1.8);if(W.clampExtra)W.clampExtra(P0);if(W.sea&&waterAt(P0.x,P0.z)&&!waterAt(ox,oz)){P0.x=ox;P0.z=oz}const moved=Math.hypot(P0.x-ox,P0.z-oz);
     b.stuck=moved<spd*dt*.3?b.stuck+dt:Math.max(0,b.stuck-dt);if(b.stuck>.4&&b.detour<=0){const s=pick([-1,1]);b.dvx=-mz*s;b.dvz=mx*s;b.detour=rnd(.5,1.1);b.stuck=0;b.pathT=0}
     b.anim+=dt*spd*3.3}
   // gravity / ground
@@ -1976,7 +1989,7 @@ function updateZombie(b,dt){const P0=b.pos;
   else if(b.stunT>0){mx=Math.sin(M.t*3+b.id);mz=Math.cos(M.t*2+b.id);spd=.5}
   if(Math.random()<dt*.15&&camera.position.distanceTo(P0)<30)blip(rnd(70,110),.5,'sawtooth',.03*clamp(1-camera.position.distanceTo(P0)/30,0,1),-30);
   if(b.detour>0){b.detour-=dt;mx=b.dvx;mz=b.dvz;spd=Math.max(spd,2)}
-  spd*=stMul(b.st);if(spd>0){const ox=P0.x,oz=P0.z;moveCircle(P0,mx*spd*dt,mz*spd*dt,.36,P0.y,P0.y+1.8);if(W.clampExtra)W.clampExtra(P0);const moved=Math.hypot(P0.x-ox,P0.z-oz);
+  spd*=stMul(b.st);if(spd>0){const ox=P0.x,oz=P0.z;moveCircle(P0,mx*spd*dt,mz*spd*dt,.36,P0.y,P0.y+1.8);if(W.clampExtra)W.clampExtra(P0);if(W.sea&&waterAt(P0.x,P0.z)&&!waterAt(ox,oz)){P0.x=ox;P0.z=oz}const moved=Math.hypot(P0.x-ox,P0.z-oz);
     b.stuck=moved<spd*dt*.3?b.stuck+dt:Math.max(0,b.stuck-dt);if(b.stuck>.4&&b.detour<=0){const s=pick([-1,1]);b.dvx=-mz*s;b.dvz=mx*s;b.detour=rnd(.5,1.1);b.stuck=0;b.pathT=0}b.anim+=dt*spd*3.3}
   const gnd=groundAt(P0.x,P0.z,.3,P0.y);if(P0.y>gnd+.05){b.vy=(b.vy||0)-GRAV*dt;P0.y=Math.max(gnd,P0.y+b.vy*dt)}else{P0.y=gnd;b.vy=0}
   b.yaw+=angDiff(Math.atan2(fx,fz),b.yaw)*Math.min(1,dt*8);b.g.rotation.y=b.yaw;botAnim(b,mx,mz,spd,dt)}
@@ -2067,10 +2080,11 @@ function triggerAlarm(c){M.alarmT=30;banner('警報響起','附近敵人正在�
 function hitBarrel(box,dmg){const br=box.barrel;if(!br||br.dead)return;br.hp-=dmg;if(br.hp<=0&&!br.fuse)br.fuse=.08}
 function updateBarrels(dt){for(const b of W.boxes){if(!b.barrel||b.barrel.dead||!b.barrel.fuse)continue;b.barrel.fuse-=dt;if(b.barrel.fuse<=0){b.barrel.dead=true;b.off=true;b.mesh.visible=false;explode(b.barrel.pos,7.5,230,{barrel:true})}}}
 function explode(pos,R,maxDmg,src={}){
+  if(!src.noCars)for(const c of W.cars||[]){if(c.dead||(src.team&&c.team===src.team&&!M.ff))continue;if(P.car===c&&src.player)continue;const rr=R+(c.kind==='ship'?12:3);const d=c.pos.distanceTo(pos);if(d<rr)carDamage(c,maxDmg*1.3*(1-d/rr))}
   fireball(pos,R*.55);emit(pos,40,'fire',12,.6,.12,4);emit(pos,24,'spark',18,.8,.05,9.8);emit(pos,20,'dust',8,1.4,.15,5);puff(pos,10,5,3.2,0x4a443c);
   lightFlash(_e1.copy(pos).setY(pos.y+1),9,34);
   const from=_e1.copy(pos);from.y+=.4;const fromC=from.clone();
-  for(const b of bots){if(b.dead||(src.team&&b.team===src.team&&M.mode!=='extract'&&!M.ff))continue;const c=_e2.set(b.pos.x,b.pos.y+1.2,b.pos.z);const d=c.distanceTo(pos);if(d<R&&los(fromC,c))damageBot(b,maxDmg*Math.pow(1-d/R,.8),'body',src.player?{player:true,pos:P.pos,how:'爆炸'}:{env:true},null)}
+  if(!src.noBots)for(const b of bots){if(b.dead||(src.team&&b.team===src.team&&M.mode!=='extract'&&!M.ff))continue;const c=_e2.set(b.pos.x,b.pos.y+1.2,b.pos.z);const d=c.distanceTo(pos);if(d<R&&los(fromC,c))damageBot(b,maxDmg*Math.pow(1-d/R,.8),'body',src.player?{player:true,pos:P.pos,how:'爆炸'}:{env:true},null)}
   if(P&&P.alive){const pe=new T.Vector3(P.pos.x,P.pos.y+P.eyeH(),P.pos.z);const dp=pe.distanceTo(pos);if(dp<R&&los(fromC,pe)&&!(src.player&&M.mode==='conquest'&&src.selfSafe))damagePlayer(maxDmg*.55*Math.pow(1-dp/R,.8),pos,{explosion:true});
     P.shake=Math.max(P.shake,clamp(2.4-dp/14,.3,2.4));boomSnd(clamp(1-dp/150,.2,1),panTo(pos.x,pos.z))}
   for(const b of W.boxes){if(b.barrel&&!b.barrel.dead&&!b.barrel.fuse&&b.barrel.pos.distanceTo(pos)<R*.8)b.barrel.fuse=rnd(.15,.3)}
@@ -2214,8 +2228,8 @@ addEventListener('keydown',e=>{if(!M.running||M.paused||UI.chatting)return;if(UI
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyQ'&&P&&M.running&&P.qDown>=0){if(!P.qFired){const w=curW();if(P.ads&&w&&w.st&&w.st.side)toggleCant();else toggleLean(-1)}P.qDown=-1}if(e.code==='Tab'&&M.running&&M.mode!=='extract')UI.scoreboard(false)});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=false});
 canvas.addEventListener('mousedown',e=>{if(!M.running||M.paused||UI.invOpen||UI.laptopOpen)return;if(!locked&&!fallbackLook&&!isTouch){lockPointer(true);return}
-  if(e.button===1&&P&&P.alive){e.preventDefault();quickMelee();return}if(e.button===0){mouse.l=true;mouse.lPressed=true}if(e.button===2&&P&&P.car&&P.car.kind==='jet'){jetMissile();return}if(e.button===2&&P&&P.alive&&(P.ready||P.charging)){cancelReady();return}if(e.button===2&&P&&P.alive){if(PF.settings.adsMode==='hold'){P.ads=true;P.zoomStage=1}else toggleADS()}});
-addEventListener('mouseup',e=>{if(e.button===0){mouse.l=false;readyFireUp()}if(e.button===2&&P&&PF.settings.adsMode==='hold')P.ads=false});
+  if(e.button===1&&P&&P.alive){e.preventDefault();quickMelee();return}if(e.button===0){mouse.l=true;mouse.lPressed=true}if(e.button===2&&P&&P.car&&P.car.kind==='jet'){jetMissile();return}if(e.button===2&&P&&P.car&&P.car.kind==='ship'){mouse.r=true;return}if(e.button===2&&P&&P.alive&&(P.ready||P.charging)){cancelReady();return}if(e.button===2&&P&&P.alive){if(PF.settings.adsMode==='hold'){P.ads=true;P.zoomStage=1}else toggleADS()}});
+addEventListener('mouseup',e=>{if(e.button===2)mouse.r=false;if(e.button===0){mouse.l=false;readyFireUp()}if(e.button===2&&P&&PF.settings.adsMode==='hold')P.ads=false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('auxclick',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(!M.running||M.paused||UI.invOpen||(!locked&&!fallbackLook))return;lookDX+=clamp(e.movementX||0,-250,250);lookDY+=clamp(e.movementY||0,-250,250)});
 canvas.addEventListener('wheel',e=>{if(M.running&&P&&P.alive)switchTo(nextSlot(e.deltaY>0?1:-1))},{passive:true});
@@ -2269,7 +2283,7 @@ function playerShoot(){
       if(!ah.isBot||!ah.ent.dead)hitmark(ah.part==='head'?'head':'body')}
     else if(wh){emit(end,pel>1?2:5,'spark',5,.25,.03,6,n,.8);emit(end,pel>1?1:3,'dust',2,.5,.06,3,n,.6);decal(end,n.x,n.y,n.z);
       if(box){if(box.barrel)hitBarrel(box,st.dmg);if(box.turret||box.cam||box.shield||box.board||box.bedTeam||box.skdev||box.skdevLocal)damageDevice(box,st.dmg);if(box.door&&!box.door.locked&&st.dmg>60&&false)toggleDoor(box.door)}}
-    {const vh=vehRay(camera.position,dir,ah?ah.t:wt,P.team,null);if(vh){carDamage(vh.c,st.dmg*.35);hitmark('body');emit(camera.position.clone().addScaledVector(dir,vh.t),4,'spark',5,.25,.03)}}
+    {const vh=vehRay(camera.position,dir,ah?ah.t:wt,P.team,null);if(vh){carDamage(vh.c,st.dmg*(['tank','ship'].includes(vh.c.kind)?.04:.35));hitmark('body');emit(camera.position.clone().addScaledVector(dir,vh.t),4,'spark',5,.25,.03)}}
     tracer(muz,end,0xffe2a0,st.scope?.03:.018)}
   const rk=st.recoil*(1-P.adsK*.4)*(1-P.crouch*.25);P.pitch+=rk*.65;P.recoilDebt+=rk*.65;P.kick+=rk*.5;P.yaw+=rnd(-.5,.5)*rk*.55;
   P.bloom=Math.min(P.bloom+(d.auto?.007:.012),.06);P.vmKick=pel>1||d.bolt?1.7:1;P.flashT=.045;if(s.vm.fl)s.vm.fl.material.rotation=Math.random()*TAU;
@@ -2425,7 +2439,7 @@ function findInteract(){if(!P.alive||P.downed)return null;camFwd(_f);let best=nu
   for(const c of W.containers)if(!c.searched&&!(c.grid&&!c.grid.items.length))consider('loot',c.pos,2.4,c);
   for(const d of W.doors)consider('door',new T.Vector3(d.x,d.y+1.2,d.z),2.2,d);
   for(const s of W.switches)if(!s.on)consider('switch',s.pos,2.2,s);
-  for(const t of W.terms||[])if(!t.done)consider('term',t.pos||(t.pos=new T.Vector3(t.x,1,t.z)),2.4,t);for(const b of W.buried||[])if(!b.dug)consider('dig',b.pos,2.2,b);if(!P.car)for(const c of W.cars||[])if(!c.dead&&!c.driver)consider('car',c.pos,c.kind?4.5:3.2,c);for(const l of W.launchers||[])consider('launcher',l.pos,3.2,l);if(!P.mg)for(const g of W.mgs||[])if(!g.user)consider('mg',g.pos,3,g);
+  for(const t of W.terms||[])if(!t.done)consider('term',t.pos||(t.pos=new T.Vector3(t.x,1,t.z)),2.4,t);for(const b of W.buried||[])if(!b.dug)consider('dig',b.pos,2.2,b);if(!P.car)for(const c of W.cars||[])if(!c.dead&&!c.driver)consider('car',c.pos,c.kind==='ship'?16:c.kind?4.5:3.2,c);for(const l of W.launchers||[])consider('launcher',l.pos,3.2,l);if(!P.mg)for(const g of W.mgs||[])if(!g.user)consider('mg',g.pos,3,g);
   for(const e of W.extracts)if(e.type==='paid'&&!e.paid&&P.pos.distanceTo(e.pos)<e.r)consider('pay',new T.Vector3(e.pos.x,P.pos.y+1,e.pos.z),e.r+.5,e,false);
   if(typeof netPuppets!=='undefined')for(const k in netPuppets){const p=netPuppets[k];if(p.downed&&p.alive)consider('revive',new T.Vector3(p.pos.x,p.pos.y+.5,p.pos.z),2.2,k,false)}
   for(const pk of W.pickups)if(!pk.taken)consider('pickup',pk.pos,2.2,pk,false);
@@ -3186,7 +3200,7 @@ function waterBasin(x0,z0,x1,z1,bed=-9){(W.water||(W.water=[])).push({minX:x0,ma
   const m=new T.Mesh(new T.PlaneGeometry(x1-x0,z1-z0),new T.MeshStandardMaterial({color:THEME.water||0x2c5866,transparent:true,opacity:.72,roughness:.15,metalness:.2,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set((x0+x1)/2,-.35,(z0+z1)/2);m.renderOrder=3;addObj(m);
   // walls of the basin so the void isn't visible
   dB(0x3a4a48,(x0+x1)/2,bed/2,z0,x1-x0,-bed,.3);dB(0x3a4a48,(x0+x1)/2,bed/2,z1,x1-x0,-bed,.3);dB(0x3a4a48,x0,bed/2,(z0+z1)/2,.3,-bed,z1-z0);dB(0x3a4a48,x1,bed/2,(z0+z1)/2,.3,-bed,z1-z0)}
-function waterAt(x,z){if(!W||!W.water)return null;for(const w of W.water)if(x>w.minX&&x<w.maxX&&z>w.minZ&&z<w.maxZ)return w;return null}
+function waterAt(x,z){if(!W||!W.water)return null;if(W.sea){const s=seaWaterAt(x,z);if(s)return s}for(const w of W.water)if(x>w.minX&&x<w.maxX&&z>w.minZ&&z<w.maxZ)return w;return null}
 function groundPlanes(h){const g=MAT.ground,S=h*2+260;if(!W.water||!W.water.length){const m=new T.Mesh(new T.PlaneGeometry(S,S),g);m.rotation.x=-Math.PI/2;m.receiveShadow=true;scene.add(m);W.meshes.push(m);return}
   const w=W.water[0],E=S/2;const rects=[[-E,-E,E,w.minZ],[-E,w.maxZ,E,E],[-E,w.minZ,w.minX,w.maxZ],[w.maxX,w.minZ,E,w.maxZ]];
   for(const [a,b,c,d] of rects){if(c-a<=0||d-b<=0)continue;const m=new T.Mesh(new T.PlaneGeometry(c-a,d-b),g);m.rotation.x=-Math.PI/2;m.position.set((a+c)/2,0,(b+d)/2);m.receiveShadow=true;scene.add(m);W.meshes.push(m)}}
@@ -3488,20 +3502,20 @@ function carMesh(col){const g=new T.Group();const body=new T.MeshStandardMateria
   g.userData.wheels=wheels;return g}
 function spawnCar(x,z,yaw){const id=(W.cars||(W.cars=[])).length;const g=carMesh(CAR_COL[id%CAR_COL.length]);g.position.set(x,terrH(x,z),z);g.rotation.y=yaw;addObj(g);
   const c={id,g,pos:g.position,yaw,spd:0,hp:300,name:['越野車','皮卡','吉普車','廂型車'][id%4],driver:null,net:null,dead:false};W.cars.push(c);return c}
-function enterCar(c){if(c.dead||c.driver)return;P.car=c;c.driver='me';P.ads=false;P.sprint=false;note(c.kind==='jet'?'戰鬥機：W 加油門 · S 減速 · 滑鼠左右轉向 · 空白鍵拉高 · C 壓低 · 左鍵機砲 · 右鍵導引飛彈 · F 彈射（先按 W 助跑到 45 m/s 以上，再按空白鍵起飛）':c.kind==='tank'?'坦克：WASD 移動 · 滑鼠轉砲塔 · 左鍵開砲 · F 下車':c.kind==='heli'?'直升機：WASD 平移 · 空白鍵上升 · C 下降 · 滑鼠轉向 · 左鍵機砲 · F 跳機':'駕駛中：WASD 駕駛 · 空白鍵煞車 · F 下車');blip(160,.3,'sawtooth',.05)}
-function exitCar(){const c=P.car;if(!c)return;if(c.kind==='jet'){if(c.pos.y>terrH(c.pos.x,c.pos.z)+4||c.dead){jetEject(c);return}c.spd=0}if(c.kind==='heli'&&c.pos.y>groundAt(c.pos.x,c.pos.z,2,c.pos.y)+3){P.pos.set(c.pos.x,c.pos.y-1.5,c.pos.z);c.driver=null;P.car=null;c.vy=-3;return}const sx=Math.cos(c.yaw)*2.2,sz=-Math.sin(c.yaw)*2.2;let x=c.pos.x+sx,z=c.pos.z+sz;if(!isFree(x,z,.4)){x=c.pos.x-sx;z=c.pos.z-sz}P.pos.set(x,groundAt(x,z,.3,c.pos.y+2),z);P.vel.set(0,0,0);c.driver=null;c.spd=0;P.car=null;if(M.net)netSend({t:'car',id:c.id,x:+c.pos.x.toFixed(2),y:+c.pos.y.toFixed(2),z:+c.pos.z.toFixed(2),yw:+c.yaw.toFixed(2),d:0})}
+function enterCar(c){if(c.dead||c.driver)return;P.car=c;c.driver='me';P.ads=false;P.sprint=false;note(c.kind==='ship'?'戰艦：W/S 油門 · A/D 轉向 · 滑鼠瞄準 · 左鍵主砲（砲彈落在準心處）· 右鍵防空機砲 · F 下船':c.kind==='boat'?'快艇：W/S 油門 · A/D 轉向 · 滑鼠瞄準 · 左鍵船首機槍 · F 下船（會掉進水裡）':c.kind==='jet'?'戰鬥機：W 加油門 · S 減速 · 滑鼠左右轉向 · 空白鍵拉高 · C 壓低 · 左鍵機砲 · 右鍵導引飛彈 · F 彈射（先按 W 助跑到 45 m/s 以上，再按空白鍵起飛）':c.kind==='tank'?'坦克：WASD 移動 · 滑鼠轉砲塔 · 左鍵開砲 · F 下車':c.kind==='heli'?'直升機：WASD 平移 · 空白鍵上升 · C 下降 · 滑鼠轉向 · 左鍵機砲 · F 跳機':'駕駛中：WASD 駕駛 · 空白鍵煞車 · F 下車');blip(160,.3,'sawtooth',.05)}
+function exitCar(){const c=P.car;if(!c)return;if(c.kind==='jet'){if(c.pos.y>terrH(c.pos.x,c.pos.z)+4||c.dead){jetEject(c);return}c.spd=0}if(c.kind==='heli'&&c.pos.y>groundAt(c.pos.x,c.pos.z,2,c.pos.y)+3){P.pos.set(c.pos.x,c.pos.y-1.5,c.pos.z);c.driver=null;P.car=null;c.vy=-3;return}const sx=Math.cos(c.yaw)*2.2,sz=-Math.sin(c.yaw)*2.2;let x=c.pos.x+sx,z=c.pos.z+sz;if(!isFree(x,z,.4)){x=c.pos.x-sx;z=c.pos.z-sz}P.pos.set(x,groundAt(x,z,.3,c.pos.y+2),z);if(W.sea&&waterAt(x,z))P.pos.y=Math.max(P.pos.y,-1);P.vel.set(0,0,0);c.driver=null;c.spd=0;P.car=null;if(M.net)netSend({t:'car',id:c.id,x:+c.pos.x.toFixed(2),y:+c.pos.y.toFixed(2),z:+c.pos.z.toFixed(2),yw:+c.yaw.toFixed(2),d:0})}
 function updateCar(dt){const c=P.car;if(!c)return false;if(c.dead||!P.alive||P.downed){exitCar();return false}if(c.kind){updateArmor(c,dt);return true}
   let th=0,st=0;if(keys.KeyW)th=1;if(keys.KeyS)th=-1;if(keys.KeyA)st=1;if(keys.KeyD)st=-1;if(touchS.stickId!==null){th=-touchS.jy;st=-touchS.jx}
   const max=th<0?-7:19;c.spd+=th*(th>0?9:12)*dt;c.spd=clamp(c.spd,-7,max);if(!th)c.spd*=1-dt*.8;if(keys.Space)c.spd*=1-dt*4;
   c.yaw+=st*dt*Math.min(1.6,Math.abs(c.spd)*.18)*Math.sign(c.spd||1);const fx=Math.sin(c.yaw),fz=Math.cos(c.yaw);
-  const ox=c.pos.x,oz=c.pos.z;moveCircle(c.pos,fx*c.spd*dt,fz*c.spd*dt,1.25,c.pos.y,c.pos.y+1.6);const moved=Math.hypot(c.pos.x-ox,c.pos.z-oz);if(Math.abs(c.spd)>3&&moved<Math.abs(c.spd)*dt*.4){if(Math.abs(c.spd)>9){carDamage(c,Math.abs(c.spd)*3);P.shake=1}c.spd*=-.25}
+  const ox=c.pos.x,oz=c.pos.z;moveCircle(c.pos,fx*c.spd*dt,fz*c.spd*dt,1.25,c.pos.y,c.pos.y+1.6);landVehBlocked(c,ox,oz,2.4);const moved=Math.hypot(c.pos.x-ox,c.pos.z-oz);if(Math.abs(c.spd)>3&&moved<Math.abs(c.spd)*dt*.4){if(Math.abs(c.spd)>9){carDamage(c,Math.abs(c.spd)*3);P.shake=1}c.spd*=-.25}
   const gy=groundAt(c.pos.x,c.pos.z,1,c.pos.y+.8);c.pos.y+=(gy-c.pos.y)*Math.min(1,dt*10);c.g.rotation.y=c.yaw;for(const w of c.g.userData.wheels)w.rotation.x+=c.spd*dt/.38;
   // run over enemies
   if(Math.abs(c.spd)>5)for(const b of bots){if(b.dead||!hostile(P.team,b.team))continue;if(Math.hypot(b.pos.x-c.pos.x-fx*1.6,b.pos.z-c.pos.z-fz*1.6)<1.7&&!b._hitCar){b._hitCar=1;damageBot(b,Math.abs(c.spd)*9,'body',{player:true,pos:P.pos,how:c.name},null);later(.6,()=>b._hitCar=0)}}
   P.pos.set(c.pos.x,c.pos.y+.4,c.pos.z);P.vel.set(fx*c.spd,0,fz*c.spd);P.speed=Math.abs(c.spd);if(Math.abs(c.spd)>4)alertNoise(c.pos,40,c.pos);
   if(!c._snd||M.t-c._snd>.25){c._snd=M.t;gunSnd(.05+Math.abs(c.spd)*.004,60+Math.abs(c.spd)*7,.25,0)}
   return true}
-function carDamage(c,d){c.hp-=d;if(c.hp<=0&&!c.dead){c.dead=true;if(c.kind==='jet'){later(.4,()=>{if(c.dead)c.g.visible=false});if(c.ai)banner(c.team===P.team?'我方戰鬥機被擊落':'擊落敵方戰鬥機','',1.6)}explode(c.pos.clone().setY(c.pos.y+1),6,180,{});c.g.traverse(o=>{if(o.material&&o.material.color)o.material.color.multiplyScalar(.25)});if(P.car===c)exitCar()}}
+function carDamage(c,d,remote){if(c.dead)return;c.hp-=d;if(M.net&&!remote&&d>0)netSend({t:'cdmg',id:c.id,d:Math.round(d)});if(c.hp<=0&&!c.dead){c.dead=true;if(c.kind==='ship'||c.kind==='boat'){const g=c.g;let k=0;const sink=()=>{k+=.05;g.position.y-=.15;g.rotation.z+=.01;if(k<4)later(.05,sink);else g.visible=false};later(.3,sink);if(c.ai)banner(c.team===P.team?'我方戰艦被擊沉':'擊沉敵方戰艦','',1.6)}if(c.kind==='jet'){later(.4,()=>{if(c.dead)c.g.visible=false});if(c.ai)banner(c.team===P.team?'我方戰鬥機被擊落':'擊落敵方戰鬥機','',1.6)}explode(c.pos.clone().setY(c.pos.y+1),6,180,{});c.g.traverse(o=>{if(o.material&&o.material.color)o.material.color.multiplyScalar(.25)});if(P.car===c)exitCar()}}
 function carCam(){const c=P.car;if(c.kind){armorCam(c);return}const fx=Math.sin(c.yaw),fz=Math.cos(c.yaw);const want=new T.Vector3(c.pos.x-fx*7.5,c.pos.y+3.4,c.pos.z-fz*7.5);camera.position.lerp(want,.25);camera.lookAt(c.pos.x+fx*4,c.pos.y+1.2,c.pos.z+fz*4)}
 function onCarMsg(m){const c=(W.cars||[])[m.id];if(!c)return;c.net={x:m.x,y:m.y,z:m.z,yw:m.yw,pt:m.pt||0,rl:m.rl||0};c.driver=m.d?m.from:null}
 function updateRemoteCars(dt){for(const c of W.cars||[]){if(c.kind==='heli'&&c.driver!=='me'&&!c.dead){if(c.driver)for(const r of c.g.userData.rot||[])r.rotation.y+=dt*30;else if(!c.net&&c.pos.y>groundAt(c.pos.x,c.pos.z,2,c.pos.y)+1){c.pos.y=Math.max(groundAt(c.pos.x,c.pos.z,2,c.pos.y)+.9,c.pos.y-dt*6)}}if(c.driver==='me'||!c.net)continue;const a=Math.min(1,dt*10);c.pos.x=lerp(c.pos.x,c.net.x,a);c.pos.y=lerp(c.pos.y,c.net.y,a);c.pos.z=lerp(c.pos.z,c.net.z,a);c.yaw+=angDiff(c.net.yw,c.yaw)*a;if(c.kind==='jet'){c.pitch=c.net.pt;c.roll=c.net.rl;jetPose(c)}else c.g.rotation.y=c.yaw}}
@@ -3548,7 +3562,7 @@ function newQuest(){const r=Math.random(),mp=pick(EX_MAPS()),M_=MAPS[mp].name;
   if(r<.92){const n=pick([5,10]);return{type:'heads',n,prog:0,reward:n*45000,desc:`爆頭擊殺 ${n} 次`}}
   return{type:'red',n:1,prog:0,reward:1200000,desc:'帶出 1 件大紅物品'}}
 const QUEST_LM={town:['裝甲工廠','博物館','集市','污水廠'],dam:['行政樓','水泥廠','軍營','遊客中心'],valley:['海景飯店','墜機點','雷達站','瀑布軍火庫','長風列車站'],space:['發射台','離心機室','中控室','黑室'],
-  prison:['中央放風場','醫務翼','海溝','管道閘門控制室'],nuclear:['1號反應爐','冷卻塔','廢料庫','污水淨化站'],forest:['伐木營地','岩洞','護林塔'],desert:['綠洲','沙海神殿','殘骸車隊'],frost:['研究站','毒氣實驗室'],tower:['台北101','觀景台','高架快速道路']};
+  prison:['中央放風場','醫務翼','海溝','管道閘門控制室'],nuclear:['1號反應爐','冷卻塔','廢料庫','污水淨化站'],forest:['伐木營地','岩洞','護林塔'],desert:['綠洲','沙海神殿','殘骸車隊'],frost:['研究站','毒氣實驗室'],tower:['台北101','觀景台','高架快速道路'],isles:['島嶼要塞','漁村','雷達站','度假村'],rig:['中央鑽油塔','西北平台','東南平台'],navy:['海軍司令部','潛艇洞庫','乾船塢','防波堤砲台']};
 function ensureQuests(){const LQ=liveQuest();PF.quests=(PF.quests||[]).filter(q=>q&&q.desc&&(q.live==null||(LQ&&q.live===LQ.live)));if(LQ&&!PF.quests.some(q=>q.live===LQ.live)&&!(PF.liveDone||[]).includes(LQ.live))PF.quests.unshift(LQ);while(PF.quests.length<3)PF.quests.push(newQuest())}
 function updateVisits(){if(M.mode!=='extract'||!W.landmarks||M.frame%15)return;M.visited=M.visited||new Set();for(const l of W.landmarks)if(!M.visited.has(l.name)&&Math.hypot(P.pos.x-l.x,P.pos.z-l.z)<Math.max(8,l.r*.6)){M.visited.add(l.name);note('抵達：'+l.name)}}
 function questsAfterRaid(win,res){if(M.mode!=='extract')return[];ensureQuests();const done=[];const reds=(res.items||[]).filter(id=>ITEMS[id]&&ITEMS[id].r>=5).length;
@@ -3789,19 +3803,19 @@ function setupWarfare(){const B=W.basePos;W.launchers=[];W.mgs=[];W.atMines=[];
 function extraFlags(){const lab='ABCDEFGHIJ';const pts=W.flagsPos.map(f=>[f[0],f[1]]);const cand=(W.landmarks||[]).filter(l=>l.name!=='車庫').map(l=>[l.x,l.z]);for(let i=0;i<200&&pts.length<10;i++){const c=cand.length&&i<60?cand[(i*7)%cand.length]:[rnd(-W.half*.75,W.half*.75),rnd(-W.half*.75,W.half*.75)];if(pts.every(p=>Math.hypot(p[0]-c[0],p[1]-c[1])>38)){const f=freePointNear(c[0],c[1],6);pts.push([f.x,f.z])}}
   return pts.slice(0,10).map((p,i)=>[p[0],p[1],lab[i]])}
 // vehicle driving extensions (called from updateCar)
-function updateArmor(c,dt){if(c.kind==='jet'){updateJet(c,dt);return}const st=(keys.KeyA?1:0)-(keys.KeyD?1:0);let th=(keys.KeyW?1:0)-(keys.KeyS?1:0);if(touchS.stickId!==null){th=-touchS.jy;}
-  if(c.kind==='tank'){c.spd+=th*6*dt;c.spd=clamp(c.spd,-4,9);if(!th)c.spd*=1-dt*1.5;c.yaw+=st*dt*.9;const fx=Math.sin(c.yaw),fz=Math.cos(c.yaw);moveCircle(c.pos,fx*c.spd*dt,fz*c.spd*dt,2,c.pos.y,c.pos.y+2.5);c.pos.y=groundAt(c.pos.x,c.pos.z,1.6,c.pos.y+.8);c.g.rotation.y=c.yaw;
+function updateArmor(c,dt){if(c.kind==='jet'){updateJet(c,dt);return}if(c.kind==='boat'||c.kind==='ship'){updateNaval(c,dt);return}const st=(keys.KeyA?1:0)-(keys.KeyD?1:0);let th=(keys.KeyW?1:0)-(keys.KeyS?1:0);if(touchS.stickId!==null){th=-touchS.jy;}
+  if(c.kind==='tank'){c.spd+=th*6*dt;c.spd=clamp(c.spd,-4,9);if(!th)c.spd*=1-dt*1.5;c.yaw+=st*dt*.9;const fx=Math.sin(c.yaw),fz=Math.cos(c.yaw);const tox=c.pos.x,toz=c.pos.z;moveCircle(c.pos,fx*c.spd*dt,fz*c.spd*dt,2,c.pos.y,c.pos.y+2.5);landVehBlocked(c,tox,toz,3.6);c.pos.y=groundAt(c.pos.x,c.pos.z,1.6,c.pos.y+.8);c.g.rotation.y=c.yaw;
     const tur=c.g.userData.tur;tur.rotation.y=angDiff(P.yaw+Math.PI,c.yaw);c.cd-=dt;if(mouse.lPressed&&c.cd<=0){mouse.lPressed=false;c.cd=2.6;camera.updateMatrixWorld();camFwd(_f);const dir=_f.clone();const o=c.pos.clone().add(new T.Vector3(0,2,0)).addScaledVector(dir,4.5);
       lobFrom('frag',o,dir.multiplyScalar(80),{impact:true,grav:2,fuse:3,boom:p=>boomAt(p,5.5,280,'坦克砲')});boomSnd(.6,0);P.shake=.8;emit(o,14,'fire',6,.4,.08)}
     for(const b of bots)if(!b.dead&&hostile(P.team,b.team)&&Math.abs(c.spd)>3&&Math.hypot(b.pos.x-c.pos.x,b.pos.z-c.pos.z)<2.6)damageBot(b,200,'body',{player:true,pos:P.pos,how:'坦克輾壓'},null)}
   else{const hy=(keys.Space?1:0)-(keys.KeyC?1:0);const sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);let mx=-sy*th+cy*(-st),mz=-cy*th-sy*(-st);if(touchS.stickId!==null){mx=-sy*(-touchS.jy)+cy*touchS.jx;mz=-cy*(-touchS.jy)-sy*touchS.jx}
-    c.vel=c.vel||new T.Vector3();c.vel.x+=(mx*22-c.vel.x)*dt*1.5;c.vel.z+=(mz*22-c.vel.z)*dt*1.5;c.vy+=(hy*8-c.vy)*dt*2;moveCircle(c.pos,c.vel.x*dt,c.vel.z*dt,2.5,c.pos.y,c.pos.y+2.5);c.pos.y=clamp(c.pos.y+c.vy*dt,groundAt(c.pos.x,c.pos.z,2,c.pos.y+.5)+.9,70);
+    c.vel=c.vel||new T.Vector3();c.vel.x+=(mx*22-c.vel.x)*dt*1.5;c.vel.z+=(mz*22-c.vel.z)*dt*1.5;c.vy+=(hy*8-c.vy)*dt*2;moveCircle(c.pos,c.vel.x*dt,c.vel.z*dt,2.5,c.pos.y,c.pos.y+2.5);c.pos.y=clamp(c.pos.y+c.vy*dt,Math.max(W.water&&waterAt(c.pos.x,c.pos.z)?-.35:-1e9,groundAt(c.pos.x,c.pos.z,2,c.pos.y+.5))+.9,70);
     c.yaw+=angDiff(P.yaw+Math.PI,c.yaw)*Math.min(1,dt*3);c.g.rotation.set(-c.vel.dot(new T.Vector3(-sy,0,-cy))*.012*0,c.yaw,0);for(const r of c.g.userData.rot||[])r.rotation.y+=dt*30;c.spd=Math.hypot(c.vel.x,c.vel.z);
     c.cd-=dt;if(mouse.l&&c.cd<=0){c.cd=.075;camera.updateMatrixWorld();camFwd(_f);const a=camera.position.clone(),d=_f.clone().add(new T.Vector3(rnd(-.02,.02),rnd(-.02,.02),rnd(-.02,.02))).normalize();const h=rayActors(a,d,180,P.team);const wall=rayWorld(a,d,180)?RH.t:180;const end=a.clone().addScaledVector(d,Math.min(wall,h?h.t:180));
-      tracer(c.pos.clone().add(new T.Vector3(0,-.6,0)),end,0xffd890,.03);gunSnd(.18,900,.08,0);if(h&&h.t<wall)skHit(h.isBot?{b:h.ent,pos:h.ent.pos}:{p:h.ent,pos:h.ent.pos},{dmg:22,how:'直升機機砲'},c.pos);else emit(end,3,'dust',2,.3,.05)}}
+      tracer(c.pos.clone().add(new T.Vector3(0,-.6,0)),end,0xffd890,.03);gunSnd(.18,900,.08,0);{const vh=vehRay(a,d,Math.min(wall,h?h.t:180),P.team,c);if(vh&&(!h||vh.t<h.t)&&vh.t<wall){carDamage(vh.c,['tank','ship'].includes(vh.c.kind)?3:22);hitmark('body')}else if(h&&h.t<wall)skHit(h.isBot?{b:h.ent,pos:h.ent.pos}:{p:h.ent,pos:h.ent.pos},{dmg:22,how:'直升機機砲'},c.pos);else emit(end,3,'dust',2,.3,.05)}}}
   P.pos.set(c.pos.x,c.pos.y+.4,c.pos.z);P.vel.set(0,0,0);P.speed=c.spd;
   for(const mn of W.atMines||[])if(!mn.dead&&c.kind!=='heli'&&Math.hypot(mn.x-c.pos.x,mn.z-c.pos.z)<2.4){mn.dead=true;scene.remove(mn.m);boomAt(new T.Vector3(mn.x,.3,mn.z),5,150,'反車輛地雷');carDamage(c,700)}}
-function armorCam(c){if(c.kind==='jet'){jetCam(c);return}const fx=-Math.sin(P.yaw)*Math.cos(P.pitch),fy=Math.sin(P.pitch),fz=-Math.cos(P.yaw)*Math.cos(P.pitch);const d=c.kind==='heli'?13:10;camera.position.set(c.pos.x-fx*d,c.pos.y+(c.kind==='heli'?3:4.2)-fy*d,c.pos.z-fz*d);camera.rotation.set(P.pitch,P.yaw,0);camera.updateMatrixWorld()}
+function armorCam(c){if(c.kind==='jet'){jetCam(c);return}const fx=-Math.sin(P.yaw)*Math.cos(P.pitch),fy=Math.sin(P.pitch),fz=-Math.cos(P.yaw)*Math.cos(P.pitch);const d=c.kind==='heli'?13:c.kind==='ship'?36:c.kind==='boat'?9:10;camera.position.set(c.pos.x-fx*d,c.pos.y+(c.kind==='heli'?3:c.kind==='ship'?13:c.kind==='boat'?3.2:4.2)-fy*d,c.pos.z-fz*d);camera.rotation.set(P.pitch,P.yaw,0);camera.updateMatrixWorld()}
 // launchers & MGs
 function useLauncher(l){if(l.cd>0){note(`飛彈發射器冷卻中 ${Math.ceil(l.cd)} 秒`);return}l.cd=40;const pp=P.pitch;P.mslFrom=l.pos.clone().add(new T.Vector3(0,3.5,0));P.pitch=1.2;try{SK['bastion.s3']()}finally{P.mslFrom=null}P.mslPitch=pp;note('飛彈發射：滑鼠導引，左鍵引爆')}
 function mountMG(g){if(g.user)return;g.user='me';P.mg=g;note('固定機槍：左鍵射擊，F 離開（會過熱）')}
@@ -3837,7 +3851,7 @@ function spawnJet(x,z,yaw,team,ai){const id=(W.cars||(W.cars=[])).length;const g
   g.traverse(o=>{if(o.material&&o.material.color)o._c0=o.material.color.clone()});const c={id,g,pos:g.position,yaw,pitch:0,roll:0,spd:0,hp:650,maxHp:650,name:'戰鬥機',driver:null,net:null,dead:false,kind:'jet',team,cd:0,mcd:0,vy:0,home:{x,z,yaw},ai:!!ai,air:false};W.cars.push(c);if(!ai)landmark('戰鬥機',x,z,4);return c}
 function setupJets(){if(M.mode!=='conquest'||!(W.world>W.half))return;W.aiJets=[];
   for(const t of [1,2]){const sx=t===1?-1:1,ax=sx*(W.half+260);const yaw=sx<0?0:Math.PI;// 跑道沿 z 軸
-    spawnJet(ax-8,-60,yaw,t);spawnJet(ax+8,-60,yaw,t);if(!M.net||M.isHost)W.aiJets.push(spawnJet(ax,60,yaw,t,true))}}
+    spawnJet(ax-8,-60,yaw,t);spawnJet(ax+8,-60,yaw,t);W.aiJets.push(spawnJet(ax,60,yaw,t,true))}}
 
 // 玩家駕駛
 function updateJet(c,dt){let th=(keys.KeyW?1:0)-(keys.KeyS?1:0);if(touchS.stickId!==null)th=-touchS.jy;const rl=(keys.KeyA?1:0)-(keys.KeyD?1:0);
@@ -3852,12 +3866,13 @@ function updateJet(c,dt){let th=(keys.KeyW?1:0)-(keys.KeyS?1:0);if(touchS.stickI
   c.roll+=((rl*.9+clamp(angDiff(wantYaw,c.yaw),-.8,.8)*-.9)-c.roll)*Math.min(1,dt*3);
   const cp=Math.cos(c.pitch),f=new T.Vector3(Math.sin(c.yaw)*cp,Math.sin(c.pitch),Math.cos(c.yaw)*cp);
   let vy=f.y*c.spd;if(!onG&&c.spd<JET_STALL&&!g&&!(c.recoverT>0)){vy-=(JET_STALL-c.spd)*.6;c.pitch=Math.max(-.6,c.pitch-dt*.25);if(M.frame%40===0)note('失速！加油門（W）')}
-  c.pos.x+=f.x*c.spd*dt;c.pos.z+=f.z*c.spd*dt;c.pos.y+=vy*dt;const WH=(W.world||W.half)-30;if(Math.abs(c.pos.x)>WH||Math.abs(c.pos.z)>WH){c.yaw+=Math.PI*dt;note('到達邊界，自動轉向')}c.pos.x=clamp(c.pos.x,-WH,WH);c.pos.z=clamp(c.pos.z,-WH,WH);
-  const g2=terrH(c.pos.x,c.pos.z);if(c.pos.y<g2+1.3){if(!onG&&(vy<-9||c.spd>70&&c.pitch<-.15)){jetCrash(c);return}c.pos.y=g2+1.3;c.spd*=1-dt*(th<0?1.2:.05)}c.pos.y=Math.min(c.pos.y,900);
+  const jox=c.pos.x,joz=c.pos.z;c.pos.x+=f.x*c.spd*dt;c.pos.z+=f.z*c.spd*dt;c.pos.y+=vy*dt;if(onG&&vy<=.01&&landVehBlocked(c,jox,joz,7))c.pos.y=gy+1.3;const WH=(W.world||W.half)-30;if(Math.abs(c.pos.x)>WH||Math.abs(c.pos.z)>WH){c.yaw+=Math.PI*dt;note('到達邊界，自動轉向')}c.pos.x=clamp(c.pos.x,-WH,WH);c.pos.z=clamp(c.pos.z,-WH,WH);
+  const wet2=W.water&&waterAt(c.pos.x,c.pos.z);const g2=wet2?Math.max(-.35,terrH(c.pos.x,c.pos.z)):terrH(c.pos.x,c.pos.z);if(c.pos.y<g2+1.3){if(wet2||!onG&&(vy<-9||c.spd>70&&c.pitch<-.15)){jetCrash(c);return}c.pos.y=g2+1.3;c.spd*=1-dt*(th<0?1.2:.05)}c.pos.y=Math.min(c.pos.y,900);
   // 撞建築
   if(c.spd>20){const q=gridQuery(c.pos.x-3,c.pos.z-3,c.pos.x+3,c.pos.z+3);for(const b of q)if(!b.off&&b.solid&&!b.tree&&b.maxY>c.pos.y-.5&&b.minY<c.pos.y+.5&&c.pos.x>b.minX-2&&c.pos.x<b.maxX+2&&c.pos.z>b.minZ-2&&c.pos.z<b.maxZ+2){jetCrash(c);return}}
   jetPose(c);c.g.userData.flame.scale.set(1,1,.5+c.spd/JET_MAX*2.5);
-  c.cd-=dt;c.mcd-=dt;if(mouse.l&&c.cd<=0){c.cd=.06;jetGun(c,f,P.team,true)}
+  c.cd-=dt;c.mcd-=dt;if(mouse.l&&c.cd<=0){c.cd=.06;// 機砲打向準心（機頭 15° 內），超出範圍就沿機頭方向
+    const ap=vehAimPoint(600),gd=ap.sub(c.pos.clone().addScaledVector(f,7.5)).normalize();jetGun(c,gd.dot(f)>Math.cos(.26)?gd:f,P.team,true)}
   P.pos.set(c.pos.x,c.pos.y+.4,c.pos.z);P.vel.set(0,0,0);P.speed=c.spd;
   if(!c._snd||M.t-c._snd>.2){c._snd=M.t;gunSnd(.05+c.spd/JET_MAX*.08,90+c.spd*2.5,.22,0)}
   jetHudShow(c,gy)}
@@ -3887,8 +3902,8 @@ function updateJetMissiles(dt){const L=W.jetMsl;if(!L)return;for(let i=L.length-
     if(hitCar||hitBot||hitG||mv.det||mv.t>12){boomAt(mv.p.clone(),7,320,'導引飛彈');if(hitCar)carDamage(hitCar,520);scene.remove(mv.m);mv.done=true;L.splice(i,1)}}}
 
 // 子彈打載具（直升機、戰鬥機）
-function vehRay(a,d,maxT,team,self){let best=null;for(const c of W.cars||[]){if(c.dead||c===self||(c.kind!=='jet'&&c.kind!=='heli'))continue;if(c.team&&team&&c.team===team&&!(c.ai&&false))continue;if(P.car===c&&team===P.team)continue;
-    const R=c.kind==='jet'?4.5:3.2;const oc=c.pos.clone().sub(a);const t=oc.dot(d);if(t<0||t>maxT)continue;const d2=oc.lengthSq()-t*t;if(d2<R*R&&(!best||t<best.t))best={c,t}}return best}
+function vehRay(a,d,maxT,team,self){let best=null;for(const c of W.cars||[]){if(c.dead||c===self)continue;if(c.team&&team&&c.team===team&&!M.ff)continue;if(P.car===c&&team===P.team)continue;
+    const R=({jet:4.5,heli:3.2,tank:2.8,boat:2.4,ship:10})[c.kind]||2.2;const oc=c.pos.clone().sub(a);const t=oc.dot(d);if(t<0||t>maxT)continue;const d2=oc.lengthSq()-t*t;if(d2<R*R&&(!best||t<best.t))best={c,t}}return best}
 
 // AI 戰鬥機（房主端）
 function updateAiJets(dt){if(!W.aiJets||(M.net&&!M.isHost))return;for(const c of W.aiJets){
@@ -3916,6 +3931,179 @@ function jetEject(c){P.pos.set(c.pos.x,c.pos.y+3,c.pos.z);c.driver=null;P.car=nu
 function updateChute(dt){if(!P||!P.chute)return;if(P.onGround||P.pos.y<terrH(P.pos.x,P.pos.z)+.3){P.chute=false;return}P.vel.y=Math.max(P.vel.y,-5)}
 // 機上 HUD
 function jetHudShow(c,gy){if(M.frame%5)return;const el=$('jetHud');el.hidden=false;el.textContent=`戰鬥機 · 速度 ${Math.round(c.spd*3.6)} km/h · 高度 ${Math.round(c.pos.y-gy)} m · 機體 ${Math.max(0,Math.round(c.hp/c.maxHp*100))}% · 飛彈 ${c.guide&&!c.guide.done?'導引中（右鍵引爆）':c.mcd>0?Math.ceil(c.mcd)+' 秒':'就緒'}　W/S 油門 · 空白鍵拉高 · C 壓低 · 滑鼠轉向 · 左鍵機砲 · 右鍵導引飛彈 · F 彈射`};
+
+</script><script>/* js/naval.js */
+'use strict';
+/* ================= 海洋地圖、船艦、載具準心 =================
+   水上地圖（3 張）：碧波群島、鋼鐵鑽油島、怒潮軍港。
+   - 全圖是海，陸地是一座座島嶼（W.islands）；海面高度 -0.35 m，可以游泳，AI 不會下水。
+   - 10 km 大世界時，外圍據點各自在一座小島上，海上還散布小島礁。
+   - 烽火撤離：出生點附近、碼頭、外圍據點都有快艇。
+   - 全面戰場：每隊有快艇 ×2、戰艦 ×1（玩家可開）、AI 戰艦 ×1（房主端自動砲擊敵人），另有坦克、直升機、戰鬥機。
+   船艦操作：W/S 油門、A/D 轉向、滑鼠瞄準。
+   - 快艇：左鍵船首機槍。
+   - 戰艦：左鍵主砲（前後兩座砲塔，彈道會下墜，冷卻 2.5 秒），右鍵防空機砲（可以打戰機、直升機）。
+   所有載具（戰鬥機、坦克、直升機、快艇、戰艦）駕駛時畫面中央有載具準心，下方顯示武器狀態；
+   爆炸會傷害敵方載具，子彈對輕型載具（直升機、戰機、快艇、汽車）有效、對坦克與戰艦只有很小的傷害。 */
+const SEA_W={surf:-.35,bed:-6,sea:true};
+function islandM(x,z){let m=-1e9;const L=W.islands||[];if(!L.length)return m;const n=(fbm(x/55,z/55,((W.seed|0)%997)+5,2)-.5);
+  for(const i of L){const d=Math.hypot(x-i.x,z-i.z);if(d>i.r+120)continue;const v=(i.r*(1+n*.32)-d)/30;if(v>m)m=v}return m}
+function seaH(m,landV){return m>0?landV*sstep(0,.6,m):-clamp(1.2-m*6,1.2,16)}
+function seaWaterAt(x,z){if(TR||FAR){const h=terrH(x,z);if(h>-.45)return null;SEA_W.bed=h;return SEA_W}if(islandM(x,z)>0)return null;SEA_W.bed=-6;return SEA_W}
+function seaSetup(){if(!W.sea)return;const S=(W.world||W.half)*2+600;const m=new T.Mesh(new T.PlaneGeometry(S,S),new T.MeshStandardMaterial({color:THEME.water||0x1e4a5e,transparent:true,opacity:.84,roughness:.12,metalness:.35,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;m.position.y=-.35;m.renderOrder=3;scene.add(m);W.meshes.push(m);W.seaMesh=m}
+function landNear(x,z,maxR=420){if(isFree(x,z,1))return{x,z};for(let r=6;r<maxR;r+=6)for(let k=0;k<20;k++){const a=k/20*TAU+r*.1;const px=x+Math.cos(a)*r,pz=z+Math.sin(a)*r;if(isFree(px,pz,1))return{x:px,z:pz}}return{x,z}}
+function deepAt(x,z,depth){const w=waterAt(x,z);return !!(w&&w.sea&&w.bed<-depth)}
+function waterNear(x,z,depth=2.5,clear=4,maxR=500){const ok=(px,pz)=>deepAt(px,pz,depth)&&deepAt(px+clear,pz,depth)&&deepAt(px-clear,pz,depth)&&deepAt(px,pz+clear,depth)&&deepAt(px,pz-clear,depth)&&!gridQuery(px-clear,pz-clear,px+clear,pz+clear).some(b=>b.solid&&!b.off&&b.maxY>-.5&&px+clear>b.minX&&px-clear<b.maxX&&pz+clear>b.minZ&&pz-clear<b.maxZ);
+  if(ok(x,z))return{x,z};for(let r=8;r<maxR;r+=8)for(let k=0;k<24;k++){const a=k/24*TAU;const px=x+Math.cos(a)*r,pz=z+Math.sin(a)*r;if(ok(px,pz))return{x:px,z:pz}}return null}
+// 碼頭：木棧道（高 0.6 m，可以走）
+function pier(x,z,w,d,mat='wood'){sbox(x,z,w,d,.3,mat,.3);for(let i=-1;i<=1;i+=2)for(let k=0;k<Math.max(2,Math.round(Math.max(w,d)/6));k++){const t=(k+.5)/Math.max(2,Math.round(Math.max(w,d)/6))-.5;const px=w>d?x+t*w:x+i*(w/2-.3),pz=w>d?z+i*(d/2-.3):z+t*d;sbox(px,pz,.35,.35,3.4,'dark',-3.1,{solid:false})}}
+function deckRoom(x,z,w,d,h,y0,mat){const t=.3;sbox(x,z-d/2,w,t,h,mat,y0);sbox(x-w/2,z,t,d,h,mat,y0);sbox(x+w/2,z+d/4,t,d/2,h,mat,y0);sbox(x,z+d/2,w,t,h,mat,y0);sbox(x,z,w+.4,d+.4,.3,'roof',y0+h)}
+
+/* ---------- 碧波群島 ---------- */
+function genIsles(){const h=W.half;W.islands=[{x:0,z:0,r:72},{x:-138,z:-122,r:50},{x:138,z:-118,r:46},{x:-132,z:126,r:54},{x:132,z:132,r:50},{x:0,z:-170,r:28},{x:0,z:170,r:28},{x:-185,z:0,r:24},{x:185,z:0,r:24}];
+  W.spawnsP=[{x:-150,z:-130},{x:150,z:-125},{x:-145,z:135},{x:145,z:140}];
+  landmark('島嶼要塞',0,0,30);building(0,-6,26,18,{floors:2,doors:['s','n'],loot:4,lootTypes:['safe','pc','crate','weapon'],mat:'wallA'});lootBox(0,18,'vault');lattice(38,30,3,26,0xd8d0bf);landmark('白色燈塔',38,30,10);
+  for(const [x,z] of [[-30,25],[30,-34],[-36,-30]])house(x,z,10,8,{loot:2,lootTypes:['crate','med']});turret(-14,14);turret(14,14);W.bossSpot={x:0,z:10};
+  landmark('漁村',-138,-122,26);for(const [dx,dz] of [[-12,-8],[10,-12],[-8,14],[14,8]])house(-138+dx,-122+dz,9,7,{loot:2,lootTypes:['crate','med','crate']});pier(-138,-62,5,24);lootBox(-138,-60,'crate',.6);
+  landmark('雷達站',138,-118,24);lattice(138,-122,4,22,0x8a2a20);building(150,-108,12,9,{doors:['w'],loot:3,lootTypes:['pc','pc','safe'],mat:'dark'});pier(138,-62,5,22);
+  landmark('碼頭倉庫',-132,126,26);for(let i=0;i<5;i++)container(-150+i*8,140,true);building(-120,112,16,12,{doors:['n','e'],loot:3,lootTypes:['crate','weapon','crate'],mat:'wallB'});pier(-132,70,6,24);
+  landmark('度假村',132,132,26);for(const [dx,dz] of [[-10,-6],[12,-10],[0,14]])house(132+dx,132+dz,11,8,{loot:2,lootTypes:['safe','crate','med']});pier(132,72,5,22);
+  landmark('北方礁',0,-170,14);wreckCar(0,-172,true);lootBox(4,-168,'safe');landmark('南方礁',0,170,14);lootBox(0,170,'weapon');
+  for(const s of W.spawnsP)W.enemySpots.push({x:s.x*.82,z:s.z*.82});W.enemySpots.push({x:0,z:30},{x:-20,z:-30},{x:25,z:10});
+  stdExtracts(h,[['std',-185,0,'西方小島'],['std',185,0,'東方小島'],['heli',0,32,'要塞直升機坪'],['paid',0,-170,'北方礁漁船']]);
+  propScatter(40,['barrels','crates','sand','lamp']);scatter(60);
+  W.flagsPos=[[0,0,'A'],[-138,-122,'B'],[132,132,'C'],[0,-170,'D'],[0,170,'E']];W.basePos={1:{x:-132,z:126},2:{x:138,z:-118}};W.relicPos={x:0,z:0};W.holdPos={x:0,z:0};W.duelSpots=[{x:-22,z:20},{x:22,z:20}]}
+
+/* ---------- 鋼鐵鑽油島（人工島 + 高架平台 + 棧橋） ---------- */
+function genRig(){const h=W.half;W.pave=true;W.islands=[{x:0,z:0,r:48},{x:-120,z:-80,r:34},{x:120,z:-80,r:34},{x:-110,z:105,r:34},{x:115,z:110,r:34},{x:0,z:-165,r:22},{x:0,z:170,r:22}];
+  W.spawnsP=[{x:-120,z:-80},{x:120,z:-80},{x:-110,z:105},{x:115,z:110}];
+  // 中央鑽油塔：高架甲板（10 m），樓梯上去
+  landmark('中央鑽油塔',0,0,26);sbox(0,0,36,30,.6,'metal',10);for(const [x,z] of [[-16,-13],[16,-13],[-16,13],[16,13]])sbox(x,z,1.6,1.6,10,'yellow',0);
+  stairs(-18,8,'z-',3,10.6,'metal');lattice(8,-6,6,34,0xc8a040);deckRoom(-8,-4,12,10,3.2,10.6,'dark');lootBox(-8,-4,'vault',10.6);lootBox(10,8,'safe',10.6);lootBox(-12,9,'pc',10.6);W.roofSpots.push({x:0,z:8,y:10.6});
+  for(const [x,z] of [[22,18],[-24,-20]])tank(x,z,5,4);building(0,30,16,10,{doors:['n'],loot:2,lootTypes:['crate','weapon'],mat:'metal'});W.bossSpot={x:0,z:22};
+  const rig=(x,z,name,types)=>{landmark(name,x,z,22);sbox(x,z,20,16,.5,'metal',7);for(const [a,b] of [[-9,-7],[9,-7],[-9,7],[9,7]])sbox(x+a,z+b,1.2,1.2,7,'yellow',0);stairs(x-11,z+5,'z-',2.6,7.5,'metal');
+    lattice(x+4,z-2,4,24,0xc8a040);lootBox(x-3,z,types[0],7.5);lootBox(x+5,z+4,types[1],7.5);building(x,z+24,12,9,{doors:['n'],loot:2,lootTypes:['crate','med'],mat:'wallB'});for(let i=0;i<3;i++)tank(x-14+i*7,z-22,2.6,3)};
+  rig(-120,-80,'西北平台',['safe','pc']);rig(120,-80,'東北平台',['weapon','safe']);rig(-110,105,'西南平台',['pc','crate']);rig(115,110,'東南平台',['safe','weapon']);
+  // 棧橋（可以走路過去，AI 不會走）
+  const bridge=(x0,z0,x1,z1)=>{const L=Math.hypot(x1-x0,z1-z0),n=Math.ceil(L/6);for(let i=0;i<n;i++){const t=(i+.5)/n;sbox(x0+(x1-x0)*t,z0+(z1-z0)*t,Math.abs(x1-x0)>Math.abs(z1-z0)?6.4:3.6,Math.abs(x1-x0)>Math.abs(z1-z0)?3.6:6.4,.3,'metal',.6)}};
+  bridge(-44,-30,-92,-62);bridge(44,-30,92,-62);bridge(-44,30,-84,82);bridge(44,30,88,86);
+  landmark('北方油槽島',0,-165,12);for(const [x,z] of [[-6,-165],[6,-165]])tank(x,z,4,6);lootBox(0,-158,'crate');landmark('南方補給島',0,170,12);container(0,170,false);lootBox(0,176,'weapon');
+  for(const s of W.spawnsP)W.enemySpots.push({x:s.x,z:s.z+14});W.enemySpots.push({x:0,z:30},{x:10,z:-20});
+  stdExtracts(h,[['std',0,-172,'北方油槽島'],['std',0,176,'南方補給島'],['heli',-8,8,'鑽油塔直升機坪'],['paid',-120,-60,'運補駁船']]);
+  propScatter(30,['barrels','crates','container']);
+  W.flagsPos=[[0,0,'A'],[-120,-80,'B'],[115,110,'C'],[120,-80,'D'],[-110,105,'E']];W.basePos={1:{x:-110,z:105},2:{x:120,z:-80}};W.relicPos={x:0,z:20};W.holdPos={x:0,z:0};W.duelSpots=[{x:-10,z:20},{x:10,z:20}]}
+
+/* ---------- 怒潮軍港（西側陸地 + 東側海灣） ---------- */
+function genNavy(){const h=W.half;W.pave=true;W.islands=[{x:-330,z:0,r:330},{x:95,z:-120,r:42},{x:110,z:115,r:36},{x:30,z:0,r:20}];
+  W.spawnsP=[{x:-180,z:-150},{x:-180,z:150},{x:95,z:-120},{x:110,z:115}];
+  road(-60,0,10,h*2-20);road(-130,0,120,8);road(-130,-90,90,8);road(-130,90,90,8);
+  landmark('海軍司令部',-130,0,24);building(-130,0,28,18,{floors:2,doors:['e','w'],loot:4,lootTypes:['safe','pc','pc','crate'],mat:'wallA'});lootBox(-130,14,'vault');W.bossSpot={x:-130,z:10};
+  landmark('潛艇洞庫',-40,-110,24);sbox(-40,-110,30,40,.4,'dark',9);sbox(-55,-110,.8,40,9,'rock',0);sbox(-25,-110,.8,40,9,'rock',0);lootBox(-40,-120,'safe');lootBox(-48,-100,'weapon');
+  landmark('乾船塢',-40,110,26);for(let i=0;i<6;i++)container(-60+i*8,135,true);building(-80,100,14,12,{doors:['e'],loot:3,lootTypes:['crate','weapon','crate'],mat:'wallB'});
+  landmark('油料庫',-150,-110,20);for(const [x,z] of [[-160,-118],[-140,-118],[-160,-100],[-140,-100]])tank(x,z,6,4);
+  landmark('雷達山',-170,120,18);lattice(-170,120,4,26,0x8a2a20);building(-150,130,10,8,{doors:['s'],loot:2,lootTypes:['pc','safe'],mat:'dark'});
+  // 碼頭與停泊的驅逐艦（裝飾，可以上甲板）
+  for(const z of [-60,0,60])pier(-12,z,26,6,'metal');landmark('一號碼頭',-12,-60,12);landmark('二號碼頭',-12,0,12);landmark('三號碼頭',-12,60,12);
+  {const sx=12,sz=30;sbox(sx,sz,9,46,1.5,'metal',-.6);sbox(sx,sz+6,6,12,5,'wallB',.9);sbox(sx,sz-10,4,6,3,'dark',.9);lattice(sx,sz+6,2,10,0x5a5e62);lootBox(sx,sz-16,'weapon',.9);lootBox(sx-2,sz+16,'safe',.9);landmark('停泊驅逐艦',sx,sz,16);stairs(-.5,sz-20,'x+',2.4,.9,'metal')}
+  landmark('防波堤砲台',95,-120,18);for(const [x,z] of [[88,-128],[102,-112]])turret(x,z);sandbag(95,-108,6,false);lootBox(95,-120,'weapon');building(95,-140,10,8,{doors:['n'],loot:2,lootTypes:['crate','safe'],mat:'dark'});
+  landmark('海上燈塔',110,115,14);lattice(110,115,3,24,0xd8d0bf);lootBox(114,118,'safe');landmark('浮標小島',30,0,10);lootBox(30,0,'crate');
+  for(const s of W.spawnsP)W.enemySpots.push({x:s.x+14,z:s.z});W.enemySpots.push({x:-130,z:24},{x:-40,z:-90},{x:-40,z:100});
+  stdExtracts(h,[['std',-h+6,0,'西側公路'],['std',110,128,'海上燈塔'],['heli',-130,30,'司令部直升機坪'],['paid',-12,62,'三號碼頭補給艇']]);
+  propScatter(60,['car','barrels','crates','sand','container','lamp','fence']);filler(h,30,[[-130,0,30],[-40,-110,30],[-40,110,30],[-150,-110,24],[-170,120,20],[-12,0,70]]);scatter(60);
+  W.flagsPos=[[-130,0,'A'],[-40,-110,'B'],[-40,110,'C'],[95,-120,'D'],[110,115,'E']];W.basePos={1:{x:-190,z:0},2:{x:95,z:-130}};W.relicPos={x:-130,z:0};W.holdPos={x:-12,z:0};W.duelSpots=[{x:-110,z:-24},{x:-110,z:24}]}
+
+/* ---------- 船艦 ---------- */
+function boatMesh(col){const g=new T.Group();const m=new T.MeshStandardMaterial({color:col,roughness:.5,metalness:.3}),dk=new T.MeshStandardMaterial({color:0x22262a,roughness:.6,metalness:.4}),wh=new T.MeshStandardMaterial({color:0xd8d4c8,roughness:.6});
+  const B=(w,h,d,mt,x,y,z)=>{const q=new T.Mesh(new T.BoxGeometry(w,h,d),mt);q.position.set(x,y,z);q.castShadow=true;g.add(q);return q};
+  B(2.6,.9,6,m,0,.2,-.4);const bow=new T.Mesh(new T.ConeGeometry(1.84,2.6,4).rotateX(Math.PI/2).rotateZ(Math.PI/4),m);bow.scale.set(1,.48,1);bow.position.set(0,.2,3.8);g.add(bow);
+  B(2.2,.12,5.6,wh,0,.7,-.4);B(1.6,1,1.6,dk,0,1.25,-.6);const gun=new T.Group();gun.position.set(0,1.1,2.2);g.add(gun);{const b=new T.Mesh(new T.BoxGeometry(.16,.16,1.4),dk);b.position.z=.6;gun.add(b);const s=new T.Mesh(new T.BoxGeometry(.5,.4,.4),dk);gun.add(s)}
+  g.userData.tur=[gun];g.userData.wheels=[];return g}
+function shipMesh(col){const g=new T.Group();const m=new T.MeshStandardMaterial({color:col,roughness:.55,metalness:.45}),dk=new T.MeshStandardMaterial({color:0x2a2e32,roughness:.6,metalness:.5}),red=new T.MeshStandardMaterial({color:0x6a2a24,roughness:.8});
+  const B=(w,h,d,mt,x,y,z,par=g)=>{const q=new T.Mesh(new T.BoxGeometry(w,h,d),mt);q.position.set(x,y,z);q.castShadow=true;par.add(q);return q};
+  B(9,3.2,40,m,0,.6,0);B(9.05,1,40.05,red,0,-1.3,0);const bow=new T.Mesh(new T.ConeGeometry(6.4,10,4).rotateX(Math.PI/2).rotateZ(Math.PI/4),m);bow.scale.set(1,.5,1);bow.position.set(0,.6,25);g.add(bow);
+  B(6,4,10,m,0,4.2,-3);B(4,3,5,m,0,7.6,-2);const mast=new T.Mesh(new T.CylinderGeometry(.15,.2,9,6),dk);mast.position.set(0,12,-2);g.add(mast);B(2.4,.15,.15,dk,0,15,-2);
+  B(1.6,3.6,1.6,dk,0,4.4,-10);const turs=[];for(const z of [12,-15]){const t=new T.Group();t.position.set(0,2.6,z);g.add(t);B(3.4,1.4,3.6,m,0,.4,0,t);for(const s of [-.6,.6]){const b=new T.Mesh(new T.CylinderGeometry(.18,.22,5,8).rotateX(Math.PI/2),dk);b.position.set(s,.5,2.8);t.add(b)}if(z<0)t.rotation.y=Math.PI;turs.push(t)}
+  const aa=new T.Group();aa.position.set(0,6.4,4);g.add(aa);{const b=new T.Mesh(new T.BoxGeometry(.2,.2,1.8),dk);b.position.z=.8;aa.add(b)}turs.push(aa);
+  g.userData.tur=turs;g.userData.wheels=[];return g}
+function spawnNaval(kind,x,z,yaw,team,ai){const id=(W.cars||(W.cars=[])).length;const g=kind==='ship'?shipMesh(team===2?0x6a645a:0x5a6470):boatMesh(team===2?0x7a5a3a:team===1?0x3a5a6a:0x5a6a5a);
+  g.position.set(x,-.35,z);g.rotation.y=yaw;addObj(g);g.traverse(o=>{if(o.material&&o.material.color)o._c0=o.material.color.clone()});
+  const c={id,g,pos:g.position,yaw,spd:0,hp:kind==='ship'?5000:550,maxHp:kind==='ship'?5000:550,name:kind==='ship'?'戰艦':'快艇',driver:null,net:null,dead:false,kind,team:team||0,cd:0,cd2:0,vy:0,home:{x,z,yaw},ai:!!ai};
+  W.cars.push(c);if(!ai)landmark(c.name,x,z,4);return c}
+function seaVehicles(mode){if(!W.sea)return;
+  if(mode==='extract'){const pts=W.spawnsP.slice();for(const l of W.landmarks||[])if(/碼頭|漁村|平台|小島|礁|燈塔/.test(l.name))pts.push(l);let n=0;
+    for(const p of pts){if(n>=10)break;const w=waterNear(p.x,p.z,1.6,3,160);if(w){spawnNaval('boat',w.x,w.z,Math.atan2(-w.x,-w.z),0);n++}}
+    for(const s of W.sats||[]){const w=waterNear(s.x,s.z,1.6,3,s.r+120);if(w)spawnNaval('boat',w.x,w.z,SR()*TAU,0)}}
+  if(mode==='conquest'){W.aiShips=[];for(const t of [1,2]){const b=W.basePos[t];const toC=Math.atan2(-b.x,-b.z);
+      const s=waterNear(b.x,b.z,5,12,500);if(s)spawnNaval('ship',s.x,s.z,toC,t);
+      for(let i=0;i<2;i++){const w=waterNear(b.x+(i?14:-14),b.z,1.6,3,300);if(w)spawnNaval('boat',w.x,w.z,toC,t)}
+      const a=waterNear(b.x*1.25+(t===1?-40:40),b.z*1.25,5,12,700);if(a)W.aiShips.push(spawnNaval('ship',a.x,a.z,toC,t,true))}}}
+
+// 玩家駕駛
+const _nf=new T.Vector3();
+function updateNaval(c,dt){const ship=c.kind==='ship';let th=(keys.KeyW?1:0)-(keys.KeyS?1:0),st=(keys.KeyA?1:0)-(keys.KeyD?1:0);if(touchS.stickId!==null){th=-touchS.jy;st=-touchS.jx}
+  const max=ship?11:24,acc=ship?2.4:10,turn=ship?.32:1.3;c.spd=clamp(c.spd+th*acc*dt,-max*.35,max);if(!th)c.spd*=1-dt*(ship?.18:.6);
+  c.yaw+=st*dt*turn*clamp(Math.abs(c.spd)/(ship?3:5),.15,1)*Math.sign(c.spd||1);navalMove(c,dt);
+  // 砲塔跟著滑鼠
+  const tur=c.g.userData.tur||[];const rel=angDiff(P.yaw+Math.PI,c.yaw);for(let i=0;i<tur.length;i++){if(ship&&i===1){tur[i].rotation.y=clamp(angDiff(rel,Math.PI),-2.3,2.3)+Math.PI}else tur[i].rotation.y=ship&&i<2?clamp(rel,-2.3,2.3):rel}
+  c.cd-=dt;c.cd2-=dt;camera.updateMatrixWorld();camFwd(_f);
+  if(!ship){if(mouse.l&&c.cd<=0){c.cd=.085;gunRay(c.pos.clone().add(new T.Vector3(0,1.4,0)).addScaledVector(_nf.set(Math.sin(c.yaw),0,Math.cos(c.yaw)),2.6),_f,220,20,.35,'快艇機槍',.018)}}
+  else{if(mouse.lPressed&&c.cd<=0){mouse.lPressed=false;c.cd=2.5;const ap=vehAimPoint(900);for(const t of tur.slice(0,2)){const o=new T.Vector3();t.getWorldPosition(o);o.y+=.6;const d=ap.clone().sub(o);const L=d.length();d.normalize();o.addScaledVector(d,5);
+        if(Math.abs(angDiff(Math.atan2(d.x,d.z),c.yaw+(t===tur[1]?Math.PI:0)))>2.35)continue;fireShell(o,ap.clone().add(new T.Vector3(rnd(-1.5,1.5),0,rnd(-1.5,1.5))),P.team,'player')}P.shake=1.2}
+    if(mouse.r&&c.cd2<=0){c.cd2=.07;const o=new T.Vector3();tur[2].getWorldPosition(o);gunRay(o,_f,420,16,.6,'防空機砲',.02,0xffb060)}}
+  P.pos.set(c.pos.x,c.pos.y+(ship?4:.8),c.pos.z);P.vel.set(0,0,0);P.speed=Math.abs(c.spd);
+  if(!c._snd||M.t-c._snd>.3){c._snd=M.t;gunSnd(.04+Math.abs(c.spd)/max*.05,50+Math.abs(c.spd)*(ship?5:8),.3,0)}
+  if(Math.abs(c.spd)>4&&M.frame%3===0)puff(c.pos.clone().addScaledVector(_nf.set(Math.sin(c.yaw),0,Math.cos(c.yaw)),ship?-20:-3).setY(-.2),1,ship?3:1.4,1.6,0xe8f0f0,.5,.3,.6)}
+function navalMove(c,dt){const ship=c.kind==='ship',need=ship?3.2:.9,fx=Math.sin(c.yaw),fz=Math.cos(c.yaw);const nx=c.pos.x+fx*c.spd*dt,nz=c.pos.z+fz*c.spd*dt;const sgn=Math.sign(c.spd)||1;
+  const probe=(x,z)=>deepAt(x,z,need)&&!gridQuery(x-1,z-1,x+1,z+1).some(b=>b.solid&&!b.off&&b.maxY>-.3&&b.minY<2&&x>b.minX-1&&x<b.maxX+1&&z>b.minZ-1&&z<b.maxZ+1);
+  const L=ship?22:3.6,Wd=ship?4.4:1.2;const tip=(s)=>[nx+fx*L*sgn+Math.cos(c.yaw)*Wd*s*0,nz+fz*L*sgn];
+  const [tx,tz]=tip(0);const WH=(W.world||W.half)-20;if(probe(nx,nz)&&probe(tx,tz)&&Math.abs(nx)<WH&&Math.abs(nz)<WH){c.pos.x=nx;c.pos.z=nz}else{if(Math.abs(c.spd)>(ship?5:12))carDamage(c,Math.abs(c.spd)*(ship?20:6));c.spd*=-.2}
+  const bob=Math.sin(M.t*1.3+c.id)*(ship?.12:.08);c.pos.y=-.35+bob-(ship?.4:0);c.g.rotation.set(Math.sin(M.t*.9+c.id)*(ship?.008:.03)-(ship?0:clamp(c.spd/24,0,1)*.06),c.yaw,Math.sin(M.t*1.1+c.id)*(ship?.012:.04))}
+
+// 路上交通工具（汽車、坦克、地面滑行的戰鬥機）不能開進水裡：車頭或車身碰到水就停住
+function landVehBlocked(c,ox,oz,front){const fx=Math.sin(c.yaw)*(Math.sign(c.spd)||1),fz=Math.cos(c.yaw)*(Math.sign(c.spd)||1);
+  const wet=(x,z)=>{const w=W.water&&waterAt(x,z);return !!(w&&w.bed<-.6)};
+  if(wet(c.pos.x,c.pos.z)||wet(c.pos.x+fx*front,c.pos.z+fz*front)){c.pos.x=ox;c.pos.z=oz;c.spd=0;if(!c._wetT||M.t-c._wetT>2){c._wetT=M.t;note(c.name+'不能開進水裡'+(W.sea?'，要過海請開快艇或戰艦':''))}return true}return false}
+// 通用：射線武器（打人和載具）
+function gunRay(o,d0,range,dmg,vehK,how,spread,col){const d=d0.clone().add(new T.Vector3(rnd(-spread,spread),rnd(-spread,spread),rnd(-spread,spread))).normalize();
+  const a=camera.position.clone();const h=rayActors(a,d,range,P.team);const wall=rayWorld(a,d,range)?RH.t:range;const vh=vehRay(a,d,Math.min(wall,h?h.t:range),P.team,P.car);const t=Math.min(wall,h?h.t:range,vh?vh.t:1e9);const end=a.clone().addScaledVector(d,t);
+  tracer(o,end,col||0xffd890,.03);gunSnd(.2,800,.07,0);
+  if(vh&&vh.t<=t+.01){carDamage(vh.c,dmg*(['tank','ship'].includes(vh.c.kind)?.1:1)*vehK*3);hitmark('body');emit(end,4,'spark',5,.25,.03)}
+  else if(h&&h.t<wall)skHit(h.isBot?{b:h.ent,pos:h.ent.pos}:{p:h.ent,pos:h.ent.pos},{dmg,how},P.car?P.car.pos:P.pos);else emit(end,3,'dust',2,.3,.05)}
+// 準心指到的位置：建築／地形、海面、載具，取最近的
+function vehAimPoint(range){camera.updateMatrixWorld();camFwd(_f);const a=camera.position.clone();let t=rayWorld(a,_f,range)?RH.t:range;
+  if(W.sea&&_f.y<-1e-4){const ts=(-.35-a.y)/_f.y;if(ts>0&&ts<t&&waterAt(a.x+_f.x*ts,a.z+_f.z*ts))t=ts}
+  const vh=vehRay(a,_f,t,P.team,P.car);if(vh)t=vh.t;return a.addScaledVector(_f,t)}
+
+/* ---------- AI 戰艦（房主端） ---------- */
+function updateAiShips(dt){updateShells(dt);if(!W.aiShips||(M.net&&!M.isHost))return;for(const c of W.aiShips){
+    if(c.dead){c.respT=(c.respT||90)-dt;if(c.respT<=0){c.respT=0;c.dead=false;c.hp=c.maxHp;c.g.traverse(o=>{if(o._c0)o.material.color.copy(o._c0)});c.pos.set(c.home.x,-.75,c.home.z);c.yaw=c.home.yaw;c.g.visible=true}continue}
+    if(c.driver)continue;c.aiA=(c.aiA||0)+dt*.04;const tx=c.home.x+Math.cos(c.aiA)*60,tz=c.home.z+Math.sin(c.aiA)*60;const want=Math.atan2(tx-c.pos.x,tz-c.pos.z);
+    c.yaw+=clamp(angDiff(want,c.yaw),-.15*dt,.15*dt);c.spd=Math.hypot(tx-c.pos.x,tz-c.pos.z)>12?5:1.5;navalMove(c,dt);
+    // 找目標
+    c.cd-=dt;const tg=aiShipTarget(c);const tur=c.g.userData.tur;if(tg){const rel=angDiff(Math.atan2(tg.x-c.pos.x,tg.z-c.pos.z),c.yaw);tur[0].rotation.y+=(clamp(rel,-2.3,2.3)-tur[0].rotation.y)*Math.min(1,dt*2);tur[1].rotation.y+=(clamp(angDiff(rel,Math.PI),-2.3,2.3)+Math.PI-tur[1].rotation.y)*Math.min(1,dt*2)
+      if(c.cd<=0){c.cd=rnd(4,6);const o=new T.Vector3();tur[Math.abs(rel)<1.6?0:1].getWorldPosition(o);o.y+=1;const to=new T.Vector3(tg.x+rnd(-7,7),0,tg.z+rnd(-7,7));to.y=Math.max(-.35,terrH(to.x,to.z));fireShell(o,to,c.team,'ai')}}
+    if(M.net&&M.frame%5===0)netSend({t:'car',id:c.id,x:+c.pos.x.toFixed(1),y:+c.pos.y.toFixed(2),z:+c.pos.z.toFixed(1),yw:+c.yaw.toFixed(2),d:0})}}
+function aiShipTarget(c){let best=null,bd=380;const chk=(p,t)=>{if(!hostile(c.team,t))return;const d=Math.hypot(p.x-c.pos.x,p.z-c.pos.z);if(d<bd&&d>25){bd=d;best=p}};
+  for(const b of bots)if(!b.dead)chk(b.pos,b.team);if(P&&P.alive)chk(P.car?P.car.pos:P.pos,P.team);for(const k in netPuppets){const q=netPuppets[k];if(q.alive)chk(q.pos,q.team)}for(const o of W.cars||[])if(!o.dead&&o.team&&o.kind!=='jet')chk(o.pos,o.team);return best}
+// 砲彈飛行（所有人都模擬；只有房主算 AI 的傷害，其他人只算自己受到的傷害）
+// who：'ai'（房主的 AI 戰艦，全額傷害）、'player'（自己開的戰艦，全額傷害並算自己的擊殺）、'remote'（別人打的，只算自己受到的傷害）
+function fireShell(o,to,team,who){const T_=Math.max(.6,o.distanceTo(to)/160);const m=new T.Mesh(new T.SphereGeometry(.28,6,4),new T.MeshBasicMaterial({color:0xffc070}));m.position.copy(o);scene.add(m);
+  (W.shells||(W.shells=[])).push({o:o.clone(),to:to.clone(),t:0,T:T_,m,team,who});emit(o,16,'fire',8,.5,.1);puff(o,4,3,2.4,0x9a9488);boomSnd(who==='player'?1:.5,panTo(o.x,o.z));
+  if(who!=='remote'&&M.net)netSend({t:'shell',o:[+o.x.toFixed(1),+o.y.toFixed(1),+o.z.toFixed(1)],p:[+to.x.toFixed(1),+to.y.toFixed(1),+to.z.toFixed(1)],team})}
+function onShellMsg(m){if(!M.running)return;fireShell(new T.Vector3(...m.o),new T.Vector3(...m.p),m.team,'remote')}
+function updateShells(dt){const L=W.shells;if(!L)return;for(let i=L.length-1;i>=0;i--){const s=L[i];s.t+=dt;const k=Math.min(1,s.t/s.T);s.m.position.lerpVectors(s.o,s.to,k);s.m.position.y+=Math.sin(k*Math.PI)*s.T*18;if(M.frame%2===0)puff(s.m.position,1,1,1.2,0xbdb6aa,.35,.1,.25);
+    if(k>=1){scene.remove(s.m);L.splice(i,1);explode(s.to.clone().setY(s.to.y+.3),8,s.who==='player'?420:300,{team:s.team,how:'艦砲',player:s.who==='player',noBots:s.who==='remote',noCars:s.who==='remote'})}}}
+
+/* ---------- 載具準心 ---------- */
+const _vp=new T.Vector3();
+function updateVehReticle(){const el=$('vxh'),nose=$('vnose'),info=$('vinfo');const c=P&&P.alive?P.car:null;if(!c||!c.kind&&!c.name){if(!el.hidden){el.hidden=true;nose.hidden=true;info.hidden=true}return}
+  el.hidden=false;info.hidden=false;let txt='';
+  if(c.kind==='jet'){const cp=Math.cos(c.pitch);_vp.set(c.pos.x+Math.sin(c.yaw)*cp*400,c.pos.y+Math.sin(c.pitch)*400,c.pos.z+Math.cos(c.yaw)*cp*400).project(camera);
+    const on=_vp.z<1&&Math.abs(_vp.x)<1&&Math.abs(_vp.y)<1;nose.hidden=!on;if(on){nose.style.left=((_vp.x+1)/2*innerWidth)+'px';nose.style.top=((1-_vp.y)/2*innerHeight)+'px'}
+    txt=`機砲 · 飛彈 ${c.guide&&!c.guide.done?'導引中':c.mcd>0?Math.ceil(c.mcd)+'s':'就緒'}`}
+  else{nose.hidden=true;txt=c.kind==='tank'?`主砲 ${c.cd>0?'裝填 '+c.cd.toFixed(1)+'s':'就緒'}（左鍵）`:c.kind==='heli'?'機砲（左鍵）':c.kind==='ship'?`主砲 ${c.cd>0?'裝填 '+c.cd.toFixed(1)+'s':'就緒'}（左鍵）· 防空機砲（右鍵）`:c.kind==='boat'?'船首機槍（左鍵）':'—（撞擊）'}
+  const hp=Math.max(0,Math.round(c.hp/(c.maxHp||300)*100));txt+=` · 耐久 ${hp}%`;if(info._t!==txt){info._t=txt;info.textContent=txt}el.classList.toggle('ready',!(c.cd>0))}
 
 </script>
 <script>/* js/modes.js */
@@ -3960,14 +4148,14 @@ function startMatch(cfg){clearAllPings();
   if(mode==='zombie'){for(const k in P.ammo)P.ammo[k]=P.ammoCap[k]}
   savePF();
   M.spawning=true;if(!M.net||M.isHost){(MD.custom?c=>MODE4[mode].spawn(c):{extract:spawnPveBots,conquest:spawnConquestBots,tdm:spawnTeamBots,relic:spawnTeamBots,zombie:()=>{},oitc:spawnFfaBots,gungame:spawnFfaBots,duel:spawnDuelBots}[mode])(cfg);spawnSatGuards()}
-  M.spawning=false;M.blood=false;liveStart();
+  M.spawning=false;M.blood=false;liveStart();seaVehicles(mode);
   if(P.rig){scene.remove(P.rig.root);P.rig=null}P.emote=null;P.car=null;
   M.running=true;M.paused=false;UI.enterGame();startIntro();
   if(cfg.fromNet)UI.needClick();else lockPointer();
   if(mode==='extract')M.countdown=0;else banner(MD.name,MD.desc,3.2);blip(330,.2,'triangle',.06);blip(440,.2,'triangle',.06,0,.15)}
 
 /* ---------- spawning ---------- */
-function freePointNear(x,z,r,tries=40){for(let i=0;i<tries;i++){const a=Math.random()*TAU,d=Math.random()*r,px=x+Math.cos(a)*d,pz=z+Math.sin(a)*d;if(isFree(px,pz,.7))return{x:px,z:pz}}return{x,z}}
+function freePointNear(x,z,r,tries=40){for(let i=0;i<tries;i++){const a=Math.random()*TAU,d=Math.random()*r,px=x+Math.cos(a)*d,pz=z+Math.sin(a)*d;if(isFree(px,pz,.7))return{x:px,z:pz}}return W&&W.sea?landNear(x,z):{x,z}}
 function ffaSpawn(){let best=null,bs=-1;for(let i=0;i<14;i++){const x=rnd(-W.half*.8,W.half*.8),z=rnd(-W.half*.8,W.half*.8);if(!isFree(x,z,.8))continue;let md=1e9;
   for(const b of bots)if(!b.dead)md=Math.min(md,Math.hypot(b.pos.x-x,b.pos.z-z));if(P&&P.alive)md=Math.min(md,Math.hypot(P.pos.x-x,P.pos.z-z)+(P.team===300?0:0));
   for(const k in netPuppets){const p=netPuppets[k];if(p.alive)md=Math.min(md,Math.hypot(p.pos.x-x,p.pos.z-z))}if(md>bs){bs=md;best={x,z}}}return best||{x:0,z:0}}
@@ -4034,7 +4222,7 @@ function updateMatch(dt){
   M.t+=dt;M.frame++;pathBudget=3;if(M.alarmT>0)M.alarmT=Math.max(0,M.alarmT-dt);if(M.streakT>0){M.streakT-=dt;if(M.streakT<=0)M.streak=0}
   if(M.countdown>0){M.countdown-=dt;UI.countdown(M.countdown);if(M.countdown<=0){UI.countdown(0);banner('開始！','',1);blip(880,.3,'square',.06)}}
   if(M.mode==='extract')M.left-=dt;else M.cqLeft-=dt;
-  updatePlayer(dt);updateCamera();updateIntro(dt);updateOutro(dt);updateWorld3(dt);updateFarTerrain();updateAiJets(dt);updateHack(dt);updateTreasure();updateJetMissiles(dt);updateChute(dt);if(!(P.car&&P.car.kind==='jet')&&!$('jetHud').hidden)$('jetHud').hidden=true;if(P.alive)aimAssist(dt);updateWeapon(dt);updateProjs(dt);updateSkills(dt);updatePings(dt);
+  updatePlayer(dt);updateCamera();updateIntro(dt);updateOutro(dt);updateWorld3(dt);updateFarTerrain();updateAiJets(dt);updateAiShips(dt);updateHack(dt);updateTreasure();updateJetMissiles(dt);updateChute(dt);if(!(P.car&&P.car.kind==='jet')&&!$('jetHud').hidden)$('jetHud').hidden=true;if(P.alive)aimAssist(dt);updateWeapon(dt);updateProjs(dt);updateSkills(dt);updatePings(dt);
   if(!(M.countdown>0))for(const b of bots){updateBot(b,dt);if(!b.puppet&&!b.dead&&(M.mode!=='extract'||b.rival)&&b.state!=='combat'){b.goalT-=dt;if(b.goalT<=0||!b.goal)pickGoal(b)}}
   else for(const b of bots)if(b.puppet)updateBot(b,dt);
   for(const d of W.doors){d.anim+=(d.target-d.anim)*Math.min(1,dt*8);d.pivot.rotation.y=d.anim*Math.PI/2*(d.axis==='x'?-1:1)}
@@ -4346,7 +4534,7 @@ function netOnData(from,m){if(!m||!m.t)return;
   netApplyShared(m)}
 function netApplyShared(m){if(!M.running)return;switch(m.t){
   case 'proj':spawnRemoteProj(m);break;case 'ping':onPingMsg(m);break;case 'ske':case 'skm':case 'mark':case 'bst':onSkillMsg(m);break;
-  case 'gd':onDropMsg(m);break;case 'cg':onContainerMsg(m);break;case 'car':onCarMsg(m);break;case 'bed':case 'bedHit':case 'dis':case 'disM':case 'bioDark':case 'cEnd':onCustomMsg(m);break;case 'task':onTaskMsg(m);break;case 'gw':if(!W.pickups.some(p=>p.nid===m.id))dropWeapon(m.wid,new T.Vector3(m.x,m.y,m.z),m.mag<0?null:m.mag,m.id);break;
+  case 'gd':onDropMsg(m);break;case 'cdmg':{const c=(W.cars||[])[m.id];if(c)carDamage(c,m.d,true);break}case 'shell':onShellMsg(m);break;case 'cg':onContainerMsg(m);break;case 'car':onCarMsg(m);break;case 'bed':case 'bedHit':case 'dis':case 'disM':case 'bioDark':case 'cEnd':onCustomMsg(m);break;case 'task':onTaskMsg(m);break;case 'gw':if(!W.pickups.some(p=>p.nid===m.id))dropWeapon(m.wid,new T.Vector3(m.x,m.y,m.z),m.mag<0?null:m.mag,m.id);break;
   case 'gwt':{const pk=W.pickups.find(p=>p.nid===m.id);if(pk&&!pk.taken){pk.taken=true;scene.remove(pk.g)}break}
   case 'door':{const d=W.doors[m.i];if(d&&d.open!==m.o){d.open=m.o;d.target=m.o?1:0;d.box.off=m.o}break}
   case 'unlock':{const d=W.doors[m.i];if(d)d.locked=null;break}case 'power':activatePower();break;case 'heli':if(!M.heli)callHeli(30);break;}}
@@ -4460,7 +4648,7 @@ function buildMinimapBase(){MS=600/(W.half*2);mapBase=document.createElement('ca
   if(TR){// 地形陰影 + 每 5 公尺等高線
     const N=200,im=g.createImageData(N,N),st=h*2/N,b0=THEME.snowy?[42,47,51]:[27,29,25];for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-h+(i+.5)*st,z=-h+(j+.5)*st,y=terrH(x,z);
       const sh=clamp((terrH(x-2,z-2)-terrH(x+2,z+2))*.11,-.5,.5),el=clamp(y/(TR.amp||10),0,1.3)*14,ct=Math.floor(y/5)!==Math.floor(terrH(x+st,z)/5)||Math.floor(y/5)!==Math.floor(terrH(x,z+st)/5);
-      const k=(j*N+i)*4,v=sh*40+el+(ct&&y>1?9:0);im.data[k]=clamp(b0[0]+v,0,255);im.data[k+1]=clamp(b0[1]+v,0,255);im.data[k+2]=clamp(b0[2]+v*.85,0,255);im.data[k+3]=255}
+      const k=(j*N+i)*4,v=sh*40+el+(ct&&y>1?9:0);if(W.sea&&y<-.4){const dd=clamp(-y/16,0,1);im.data[k]=24-dd*10;im.data[k+1]=62-dd*24;im.data[k+2]=82-dd*24;im.data[k+3]=255;continue}im.data[k]=clamp(b0[0]+v,0,255);im.data[k+1]=clamp(b0[1]+v,0,255);im.data[k+2]=clamp(b0[2]+v*.85,0,255);im.data[k+3]=255}
     const tc=document.createElement('canvas');tc.width=tc.height=N;tc.getContext('2d').putImageData(im,0,0);g.imageSmoothingEnabled=true;g.drawImage(tc,0,0,600,600)}
   const bx=b=>[(b.minX+h)*MS,(b.minZ+h)*MS,Math.max(1,(b.maxX-b.minX)*MS),Math.max(1,(b.maxZ-b.minZ)*MS)];
   for(const b of W.boxes){if(!b.solid||b.kind==='door')continue;if(b.minY>2&&b.maxY-b.minY<1){g.fillStyle='rgba(60,60,52,.9)';g.fillRect(...bx(b));continue}}
@@ -4585,7 +4773,7 @@ function hud(dt){
   // squad
   const sq=Object.values(netPuppets);const sqh=sq.map(p=>`${p.nick} · ${p.downed?'倒地':p.alive?Math.round(p.hp)+' HP':'陣亡'}`).join('|');if(UI._c.sq!==sqh){UI._c.sq=sqh;$('squad').innerHTML='';for(const p of sq){const d=document.createElement('div');d.textContent=`${p.nick} · ${p.downed?'倒地':p.alive?Math.round(p.hp)+' HP':'陣亡'}`;$('squad').appendChild(d)}}
   if(bannerT>0){bannerT-=dt;if(bannerT<=0)$('banner').style.opacity=0}if(noteT>0){noteT-=dt;if(noteT<=0)$('note').style.opacity=0}
-  invTick();$('xh').style.visibility=P.car||P.emote?'hidden':'';drawCompass();drawMini();if(UI.mapOpen&&(M.frame%15===0))drawBigMap();if(UI.invOpen&&M.frame%30===0)$('invVal').textContent=fmt(invValue());
+  invTick();$('xh').style.visibility=P.car||P.emote?'hidden':'';updateVehReticle();drawCompass();drawMini();if(UI.mapOpen&&(M.frame%15===0))drawBigMap();if(UI.invOpen&&M.frame%30===0)$('invVal').textContent=fmt(invValue());
 }
 
 /* ---------- touch controls ---------- */
@@ -5209,6 +5397,9 @@ const HELP_KEYS=[
   ['坦克','滑鼠轉砲塔、左鍵開砲','裝甲厚，但怕飛彈和反坦克地雷'],
   ['直升機','空白鍵上升、C 下降、左鍵機砲','在空中按 F 會直接跳機'],
   ['重機槍 / 飛彈發射器','F 使用、左鍵射擊','重機槍會過熱；飛彈發射器有冷卻'],
+  ['快艇（水上地圖）','W/S 油門、A/D 轉向、滑鼠瞄準','左鍵船首機槍；烽火水圖在出生點、碼頭、外圍小島都有快艇；下船會掉進水裡要游泳'],
+  ['戰艦（全面戰場水圖）','W/S 油門、A/D 轉向、滑鼠瞄準','左鍵主砲（前後砲塔，砲彈落在準心指的位置，冷卻 2.5 秒）、右鍵防空機砲（可打戰機與直升機）；靠近船身 16 m 內按 F 上船'],
+  ['載具準心','駕駛任何載具時畫面中央的圓圈','綠色＝武器就緒、紅色＝裝填中，下方顯示武器狀態與耐久；戰鬥機另有菱形標出機頭方向，機砲會打向準心（機頭 15° 內）'],
   ['戰鬥機（全面戰場）','W 油門、S 減速、滑鼠左右轉向、空白鍵拉高、C 壓低、A/D 側滾','起飛要助跑：先按 W 加速到 45 m/s 以上再按空白鍵拉起；低於 40 m/s 會失速。左鍵機砲；右鍵導引飛彈（飛向準心，用滑鼠引導，再按右鍵提早引爆，冷卻 8 秒；導引時戰鬥機自動減速、保持高度緩慢前進）；F 彈射跳傘']]],
  ['介面','',[
   ['Tab','背包 / 計分板','撤離模式是背包：拖曳物品放到你想要的格子（放不下會自動試著轉 90°，也可以拖曳時按 R 旋轉）、拖到空白處或「丟棄區」丟在地上；背包與胸掛可以連同內容物一起拖進箱子；其他模式是計分板'],
@@ -5219,7 +5410,7 @@ function tabHelp(p){p.append(h('p',{class:'hint',text:'以下是預設按鍵；�
   for(const [title,intro,list] of HELP_KEYS){const kids=[];if(intro)kids.push(h('p',{class:'hint',text:intro}));
     kids.push(h('div',{class:'keys keys2',html:list.map(([k,v,n])=>`<span><kbd>${k}</kbd><b>${v}</b>${n?`<small>${n}</small>`:''}</span>`).join('')}));p.append(sec(title,...kids))}
   p.append(sec('手機操作',h('p',{class:'hint',text:'左半邊拖曳移動，推到底自動衝刺；衝刺時按「蹲/滑」會滑鏟。右半邊拖曳轉視角，按住射擊鍵時也可以拖曳瞄準，並會輕微自動吸附敵人。靠近物資箱、門、電閘時會出現互動按鈕，按住即可。下排的「標點」鈕等於 O 鍵。建議橫向遊玩。'})));
-  p.append(sec('地形',h('p',{class:'hint',html:'<b>10 × 10 公里大世界</b>：烽火撤離和全面戰場的地圖是 10 km 見方，原本的地圖在正中央（核心區），外圍是丘陵與山脈，散布 20 多個小據點（村莊、哨站、倉儲站、通訊站、農場、墜機點），每個都有物資和守軍；最遠的 3 個據點有撤離點，4 個有車庫。其他模式只用核心區。<br>野外地圖（長風谷、叢林、寒脊研究站、斷河水壩、赤沙綠洲、餘燼核電廠）核心區也有明顯起伏；星港發射場、怒濤監獄只有少量緩坡；城市地圖（灰區鎮、台北101）核心區大致平坦。<br>· <b>山丘會擋子彈和視線</b>：躲在坡後面敵人打不到你，AI 也看不到你。<br>· <b>佔高點</b>：坡頂視野遠，但站在稜線上很顯眼，趴下或退半步只露頭比較安全。<br>· <b>小地圖與大地圖</b>：亮的地方比較高，細線是每 5 公尺一條的等高線。<br>· 建築、道路、撤離點周圍一定是平地。'})));
+  p.append(sec('地形',h('p',{class:'hint',html:'<b>10 × 10 公里大世界</b>：烽火撤離和全面戰場的地圖是 10 km 見方，原本的地圖在正中央（核心區），外圍是丘陵與山脈，散布 20 多個小據點（村莊、哨站、倉儲站、通訊站、農場、墜機點），每個都有物資和守軍；最遠的 3 個據點有撤離點，4 個有車庫。其他模式只用核心區。<br><b>水上地圖</b>（碧波群島、鋼鐵鑽油島、怒潮軍港）：全圖是海，陸地是一座座島嶼，可以游泳；烽火撤離有快艇，全面戰場每隊有快艇、戰艦、AI 戰艦、坦克、直升機、戰鬥機。爆炸會傷害敵方載具，步槍對坦克、戰艦幾乎無效。<br>野外地圖（長風谷、叢林、寒脊研究站、斷河水壩、赤沙綠洲、餘燼核電廠）核心區也有明顯起伏；星港發射場、怒濤監獄只有少量緩坡；城市地圖（灰區鎮、台北101）核心區大致平坦。<br>· <b>山丘會擋子彈和視線</b>：躲在坡後面敵人打不到你，AI 也看不到你。<br>· <b>佔高點</b>：坡頂視野遠，但站在稜線上很顯眼，趴下或退半步只露頭比較安全。<br>· <b>小地圖與大地圖</b>：亮的地方比較高，細線是每 5 公尺一條的等高線。<br>· 建築、道路、撤離點周圍一定是平地。'})));
   p.append(sec('物品顏色與價值',h('p',{class:'hint',html:'背包裡的物品只寫名字和實際價格，<b>名字的顏色代表值多少錢</b>：'+VAL_TIERS.map(t=>`<b style="color:${t[1]}">${t[2]}</b>（${t[0]?fmt(t[0])+' 以上':'以下'}）`).join('、')+'。物品佔幾格就畫幾格；拖到放不下的地方會自動偵測要不要轉 90°。'})));
   p.append(sec('挖寶、駭入與活動',h('p',{class:'hint',html:'· <b>挖寶</b>：物資箱、保險櫃、金庫偶爾開出「藏寶圖」，在背包裡點一下讀取，大地圖上出現金色圓圈；走到 25 m 內會看到土堆，按住 F 挖出寶箱（至少 3 件高價值物品）。也可以把自己的東西拖到「埋藏」格，下一局再挖。<br>· <b>隨身電腦</b>（K）：站在訊號中繼站旁駭入敵人，4 秒完成，冷卻 45 秒。被駭的人按 H 用醫療包可以重開機解除。<br>· <b>皮膚爆率</b>：紫皮 +10%、金皮 +20%、紅皮 +35%（烽火撤離容器開出高價值物品的機率）。<br>· <b>定期活動</b>（每 2 天輪替）：特殊頭目、特殊地圖（血月之夜）、特殊探員、特殊任務，出擊頁最上方會顯示目前活動與剩餘時間。<br>· <b>人員配置</b>：出擊頁可以選要加入哪一隊、調整每隊 AI 人數；開房間後朋友可以自己選隊。<br>· <b>連線同步</b>：烽火撤離中，一個容器被搜過後，其他人打開只剩下沒被拿走的東西；丟在地上的東西全場都看得到、撿得到。'})));
   p.append(sec('標記、晶片與標點',h('p',{class:'hint',html:'· <b style="color:#ff4b3e">紅色標記</b>：被技能偵測或被隊友按 O 標出的敵人，頭上出現紅色標記，穿牆可見，小地圖和大地圖也會顯示。<br>· <b style="color:#ff4b3e">追蹤晶片</b>（蒼鷹小招）：命中後 30 秒內位置一直暴露給對方全隊。如果是你被植入，畫面會跳警告，狀態列會倒數，附近 120 m 的敵方 AI 會一直追著你。按 H 用醫療包（即使滿血也可以）治療完成時會把晶片挖出來。<br>· <b style="color:#ffc640">黃色標點</b>：你自己按 O 放的；<b style="color:#6fd0ff">藍色標點</b>是隊友放的，旁邊會寫是誰。標點上方會顯示距離。<br>· 同隊的 AI 隊友（團隊死鬥、全面戰場等模式）看到標點會跑過去，在附近散開待命；遇到敵人會先打，打完繼續過去。'})));
